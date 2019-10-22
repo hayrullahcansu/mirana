@@ -20,21 +20,28 @@ var joinRoomRankedGameHandlerRoute = flag.String("joinRoomMode2HandlerRoute", "/
 var appLiveVersion = flag.String("app_live_version", "1.0.0", "http spinner handler function path")
 
 //RunHandlers provite to handle requests and redirect
-func RunHandlers(gameServer *GameServer) {
+func RunHandlers() {
+	defer func() {
+		if x := recover(); x != nil {
+			log.Printf("run time panic: %v", x)
+			//TODO: save the state and initlaize again.
+			RunHandlers()
+		}
+	}()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.Parse()
-
+	//TODO: init and initialize old game states / recover if the server broken
 	http.HandleFunc(*loginHandlerRoute, routes.LoginHandler)
 	http.HandleFunc(*registerHandlerRoute, routes.RegisterHandler)
 
 	http.HandleFunc(*joinLobbyHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
-		routes.JoinLobbyHandler(gameServer, w, r)
+		routes.JoinLobbyHandler(w, r)
 	})
 	http.HandleFunc(*joinRoomNormalGameHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
-		routes.JoinRoomNormalGameHandler(gameServer, w, r)
+		routes.JoinRoomNormalGameHandler(w, r)
 	})
 	http.HandleFunc(*joinRoomRankedGameHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
-		routes.JoinRoomRankedGameHandler(gameServer, w, r)
+		routes.JoinRoomRankedGameHandler(w, r)
 	})
 
 	err := http.ListenAndServe(*addr, nil)

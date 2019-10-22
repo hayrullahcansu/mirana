@@ -2,12 +2,11 @@ package routes
 
 import (
 	"net/http"
-
-	"github.com/hayrullahcansu/mirana/core/mng"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid
-func JoinLobbyHandler(gs *mng.GameServer, w http.ResponseWriter, r *http.Request) {
+func JoinLobbyHandler(w http.ResponseWriter, r *http.Request) {
+
 	// _data, err := ioutil.ReadAll(r.Body)
 	// if err == nil {
 	// 	re := messaging.Response{Result: true, ContentCode: 1, Data: string(_data[:])}

@@ -2,36 +2,51 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
-	"github.com/hayrullahcansu/zapper/man"
+	"github.com/hayrullahcansu/mirana/core/service"
+	"github.com/hayrullahcansu/mirana/cross"
 )
 
-var addr = flag.String("addr", "127.0.0.1:8080", "http service address")
-
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	name := flag.String("name", "Mirana Game Server", "Mirana Game Server")
+	// configPath := flag.String("config", "app.json", "config file")
 	flag.Parse()
-	server := man.NewServer()
-	go server.Run()
-	http.HandleFunc("/gameroom", func(w http.ResponseWriter, r *http.Request) {
 
-		htmlData, err := ioutil.ReadAll(r.Body) //<--- here!
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		// print out
-		fmt.Println(string(htmlData)) //<-- here !
-		man.ServeWs(server, w, r)
-	})
-	log.Print("ListenAndServe: ", *addr)
-	err := http.ListenAndServe(*addr, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	// arguments stuffs
+	// config.SetConfigFilePath(*configPath)
+
+	log.Printf("Starting service for %s%s", *name, cross.NewLine)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs)
+
+	go func() {
+		s := <-sigs
+		log.Printf("RECEIVED SIGNAL: %s%s", s, cross.NewLine)
+		AppCleanup()
+		os.Exit(1)
+	}()
+	service.RunHandlers()
+	select {}
+
 }
+func AppCleanup() {
+	time.Sleep(time.Millisecond * time.Duration(1000))
+	log.Println("CLEANUP APP BEFORE EXIT!!!")
+}
+
+// func main() {
+
+// 	for index := 0; index < count; index++ {
+
+// 	}
+
+// 	if x := recover(); x != nil {
+// 		log.Printf("run time panic: %v", x)
+// 		//TODO: save the state and initlaize again.
+// 		service.RunHandlers()
+// 	}
+// }

@@ -1,4 +1,4 @@
-package sp
+package lobby
 
 import (
 	"sync"
@@ -6,34 +6,33 @@ import (
 	"github.com/hayrullahcansu/mirana/core/types"
 )
 
-type SPGameManager struct {
-	GameRooms map[*SPGameRoom]bool
+type LobbyManager struct {
+	// GameRooms map[*SPGameRoom]bool
 	// RoomManager *RoomManager
 	// Lobby       *Lobby
 	// Users       map[int]*dto.PlayerDto
 }
 
-var _instance *SPGameManager
+var _instance *LobbyManager
 
 var _once sync.Once
 
-func Manager() *SPGameManager {
+func Manager() *LobbyManager {
 	_once.Do(initialGameManagerInstance)
 	return _instance
 }
 
 func initialGameManagerInstance() {
-	_instance = &SPGameManager{
-		GameRooms: make(map[*SPGameRoom]bool),
+	_instance = &LobbyManager{
+		// GameRooms: make(map[*SPGameRoom]bool),
 	}
 }
 
-func (manager *SPGameManager) RequestPlayGame(client *types.Client) {
-	gameRoom := NewSPGameRoom()
+func (manager *LobbyManager) RequestPlayGame(client *types.Client) {
 	player := &types.Player{
 		Client:     client,
 		InternalID: -1,
-		Unregister: gameRoom.unregister,
+		Unregister: gameRoom.Unregister,
 	}
 	manager.GameRooms[gameRoom] = true
 	client.notify = gameRoom.Notify
