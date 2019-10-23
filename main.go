@@ -2,16 +2,27 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/hayrullahcansu/mirana/abc"
 	"github.com/hayrullahcansu/mirana/core/service"
 	"github.com/hayrullahcansu/mirana/cross"
+	"github.com/hayrullahcansu/mirana/xyz"
 )
 
 func main() {
+	t1 := &xyz.XYZ{}
+
+	fmt.Println(t1.TestMessage("TEST1"))
+	t2 := &abc.ABC{}
+	fmt.Println(t2.TestMessage("TEST2"))
+	t1.Reis()
+	t2.Reis()
+
 	name := flag.String("name", "Mirana Game Server", "Mirana Game Server")
 	// configPath := flag.String("config", "app.json", "config file")
 	flag.Parse()
