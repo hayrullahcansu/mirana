@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hayrullahcansu/mirana/core/comm/netl"
+	"github.com/hayrullahcansu/mirana/core/mng/lobby"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid
@@ -11,7 +12,7 @@ func JoinLobbyHandler(w http.ResponseWriter, r *http.Request) {
 
 	c := netl.NewClient()
 	c.ServeWs(w, r)
-	
+	lobby.Manager().ConnectLobby(c)
 	// t := netsp.NetSPClient{
 	// 	BaseClient: c,
 	// }

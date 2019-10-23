@@ -177,6 +177,7 @@ func (c *BaseClient) WritePump() {
 
 // ServeWs handles websocket requests from the peer.
 func (b *BaseClient) ServeWs(w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	Conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
