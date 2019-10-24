@@ -44,8 +44,18 @@ type BaseClient struct {
 	IBaseClient
 	Conn       *websocket.Conn
 	Send       chan *Envelope
+	SentBy     interface{}
 	Notify     chan *Notify
 	Unregister chan interface{}
+}
+
+func NewBaseClient(extended interface{}) *BaseClient {
+	return &BaseClient{
+		Send:       make(chan *Envelope, 1),
+		Notify:     make(chan *Notify, 1),
+		Unregister: make(chan interface{}, 1),
+		SentBy:     extended,
+	}
 }
 
 // // readPump pumps messages from the websocket Connection to the hub.
@@ -134,10 +144,19 @@ func (c *BaseClient) ReadPump() {
 					log.Fatal(err)
 				}
 				env.Message = double
+			case EPlayGame:
+				var playGame PlayGame
+				if err := json.Unmarshal(msg, &playGame); err != nil {
+					log.Fatal(err)
+				}
+				env.Message = playGame
+			default:
+				continue
 			}
+
 			c.Notify <- &Notify{
 				Message: &env,
-				SentBy:  c,
+				SentBy:  c.SentBy,
 			}
 		}
 
@@ -169,8 +188,10 @@ func (c *BaseClient) WritePump() {
 			log.Println(string(msg[:]))
 			w.Write(msg)
 			if err := w.Close(); err != nil {
+				log.Println(err)
 				return
 			}
+		default:
 		}
 	}
 }

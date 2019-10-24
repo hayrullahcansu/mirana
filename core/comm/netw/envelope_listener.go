@@ -2,12 +2,12 @@ package netw
 
 type EnvelopeListener interface {
 	OnNotify(notify *Notify)
-	OnEvent(event *Event)
-	OnStamp(stamp *Stamp)
-	OnAddMoney(addMoney *AddMoney)
-	OnDeal(deal *Deal)
-	OnStand(stand *Stand)
-	OnHit(hit *Hit)
-	OnDouble(double *Double)
-	OnPlayGame(playGame *PlayGame)
+	OnEvent(c interface{}, event *Event)
+	OnStamp(c interface{}, stamp *Stamp)
+	OnAddMoney(c interface{}, addMoney *AddMoney)
+	OnDeal(c interface{}, deal *Deal)
+	OnStand(c interface{}, stand *Stand)
+	OnHit(c interface{}, hit *Hit)
+	OnDouble(c interface{}, double *Double)
+	OnPlayGame(c interface{}, playGame *PlayGame)
 }

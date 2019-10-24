@@ -63,3 +63,14 @@ const (
 	EDouble               // 6
 	EPlayGame             // 7
 )
+
+var MessageCodes = []MessageCode{
+	EEvent,
+	EStamp,
+	EAddMoney,
+	EDeal,
+	EStand,
+	EHit,
+	EDouble,
+	EPlayGame,
+}

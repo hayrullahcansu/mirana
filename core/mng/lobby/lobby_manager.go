@@ -1,7 +1,10 @@
 package lobby
 
 import (
+	"fmt"
 	"sync"
+
+	"github.com/google/uuid"
 
 	"github.com/hayrullahcansu/mirana/core/comm/netl"
 	"github.com/hayrullahcansu/mirana/core/comm/netw"
@@ -37,23 +40,69 @@ func (s *LobbyManager) ListenEvents() {
 		case player := <-s.Unregister:
 			s.OnDisconnect(player)
 		case _ = <-s.Broadcast:
-			break
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
 		default:
-			break
 		}
 	}
 }
-func (m *LobbyManager) ConnectLobby(client *netl.NetLobbyClient) {
-	m.Players[client] = true
-	client.Notify = m.Notify
-	m.Register <- client
+
+func (s *LobbyManager) OnNotify(notify *netw.Notify) {
+	d := notify.Message.Message
+	switch v := notify.Message.Message.(type) {
+	case netw.Event:
+		t := d.(netw.Event)
+		s.OnEvent(notify.SentBy, &t)
+	case netw.Stamp:
+		t := d.(netw.Stamp)
+		s.OnStamp(notify.SentBy, &t)
+	case netw.AddMoney:
+		t := d.(netw.AddMoney)
+		s.OnAddMoney(notify.SentBy, &t)
+	case netw.Deal:
+		t := d.(netw.Deal)
+		s.OnDeal(notify.SentBy, &t)
+	case netw.Stand:
+		t := d.(netw.Stand)
+		s.OnStand(notify.SentBy, &t)
+	case netw.Hit:
+		t := d.(netw.Hit)
+		s.OnHit(notify.SentBy, &t)
+	case netw.Double:
+		t := d.(netw.Double)
+		s.OnDouble(notify.SentBy, &t)
+	case netw.PlayGame:
+		t := d.(netw.PlayGame)
+		s.OnPlayGame(notify.SentBy, &t)
+	default:
+		fmt.Printf("unexpected type %T", v)
+	}
 }
 
-func (m *LobbyManager) OnConnect(client interface{}) {
-	_, ok := client.(*netl.NetLobbyClient)
+func (m *LobbyManager) ConnectLobby(c *netl.NetLobbyClient) {
+	m.Players[c] = true
+	c.Notify = m.Notify
+	m.Register <- c
+}
+
+func (m *LobbyManager) OnConnect(c interface{}) {
+	_, ok := c.(*netl.NetLobbyClient)
 	if ok {
 
+	}
+}
+func (m *LobbyManager) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
+	client, ok := c.(*netl.NetLobbyClient)
+	if ok {
+		//TODO: check player able to play?
+		mode := playGame.Mode
+		guid := uuid.New()
+		playGame.Id = guid.String()
+		playGame.Mode = mode
+		client.Send <- &netw.Envelope{
+			Client:      "client_id",
+			Message:     playGame,
+			MessageCode: netw.EPlayGame,
+		}
 	}
 }

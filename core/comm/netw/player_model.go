@@ -1,6 +1,6 @@
 package netw
 
 type Notify struct {
-	SentBy  *BaseClient
+	SentBy  interface{}
 	Message *Envelope
 }

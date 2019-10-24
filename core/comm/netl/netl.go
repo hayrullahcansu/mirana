@@ -9,11 +9,8 @@ type NetLobbyClient struct {
 }
 
 func NewClient() *NetLobbyClient {
-	return &NetLobbyClient{
-		BaseClient: &netw.BaseClient{
-			Send:       make(chan *netw.Envelope),
-			Notify:     make(chan *netw.Notify),
-			Unregister: make(chan interface{}),
-		},
-	}
+	client := &NetLobbyClient{}
+	base := netw.NewBaseClient(client)
+	client.BaseClient = base
+	return client
 }

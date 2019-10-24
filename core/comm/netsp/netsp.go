@@ -1,22 +1,22 @@
 package netsp
 
 import (
-	"fmt"
-
 	"github.com/hayrullahcansu/mirana/core/comm/netw"
 )
 
 type NetSPClient struct {
-	netw.BaseClient
-	netw.EnvelopeListener
-}
-
-func (c *NetSPClient) OnNotify(notify *netw.Notify) {
-	fmt.Println("WORKED INHERITED METHOD")
+	*netw.BaseClient
+	amount float32
 }
 
 func NewClient() *NetSPClient {
-	return &NetSPClient{
-		BaseClient: netw.BaseClient{},
-	}
+
+	client := &NetSPClient{}
+	base := netw.NewBaseClient(client)
+	client.BaseClient = base
+	return client
+}
+
+func (c *NetSPClient) AddMoney(amount float32) {
+	c.amount += amount
 }

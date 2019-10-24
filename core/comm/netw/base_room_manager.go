@@ -19,10 +19,10 @@ type IBaseRoomManager interface {
 
 func NewBaseRoomManager() *BaseRoomManager {
 	return &BaseRoomManager{
-		Register:   make(chan interface{}),
-		Unregister: make(chan interface{}),
-		Notify:     make(chan *Notify),
-		Broadcast:  make(chan *Envelope),
+		Register:   make(chan interface{}, 1),
+		Unregister: make(chan interface{}, 1),
+		Notify:     make(chan *Notify, 1),
+		Broadcast:  make(chan *Envelope, 1),
 	}
 }
 
@@ -33,7 +33,8 @@ func (s *BaseRoomManager) ListenEvents() {
 			s.OnConnect(player)
 		case player := <-s.Unregister:
 			s.OnDisconnect(player)
-		case _ = <-s.Broadcast:
+		case b := <-s.Broadcast:
+			println(b)
 			break
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
@@ -43,33 +44,53 @@ func (s *BaseRoomManager) ListenEvents() {
 	}
 }
 
-func (m *BaseRoomManager) OnConnect(client interface{}) {
+func (m *BaseRoomManager) OnConnect(c interface{}) {
 
 }
 
-func (m *BaseRoomManager) OnDisconnect(client interface{}) {
+func (m *BaseRoomManager) OnDisconnect(c interface{}) {
 
 }
 
 func (s *BaseRoomManager) OnNotify(notify *Notify) {
+	d := notify.Message.Message
 	switch v := notify.Message.Message.(type) {
 	case Event:
+		t := d.(Event)
+		s.OnEvent(notify.SentBy, &t)
 	case Stamp:
+		t := d.(Stamp)
+		s.OnStamp(notify.SentBy, &t)
 	case AddMoney:
+		t := d.(AddMoney)
+		s.OnAddMoney(notify.SentBy, &t)
 	case Deal:
+		t := d.(Deal)
+		s.OnDeal(notify.SentBy, &t)
 	case Stand:
+		t := d.(Stand)
+		s.OnStand(notify.SentBy, &t)
 	case Hit:
+		t := d.(Hit)
+		s.OnHit(notify.SentBy, &t)
 	case Double:
+		t := d.(Double)
+		s.OnDouble(notify.SentBy, &t)
+	case PlayGame:
+		t := d.(PlayGame)
+		s.OnPlayGame(notify.SentBy, &t)
 	default:
 		fmt.Printf("unexpected type %T", v)
 	}
 }
 
-func (s *BaseRoomManager) OnEvent(event *Event)          {}
-func (s *BaseRoomManager) OnStamp(stamp *Stamp)          {}
-func (s *BaseRoomManager) OnAddMoney(addMoney *AddMoney) {}
-func (s *BaseRoomManager) OnDeal(deal *Deal)             {}
-func (s *BaseRoomManager) OnStand(stand *Stand)          {}
-func (s *BaseRoomManager) OnHit(hit *Hit)                {}
-func (s *BaseRoomManager) OnDouble(double *Double)       {}
-func (s *BaseRoomManager) OnPlayGame(playGame *PlayGame) {}
+func (s *BaseRoomManager) OnEvent(c interface{}, event *Event)          {}
+func (s *BaseRoomManager) OnStamp(c interface{}, stamp *Stamp)          {}
+func (s *BaseRoomManager) OnAddMoney(c interface{}, addMoney *AddMoney) {}
+func (s *BaseRoomManager) OnDeal(c interface{}, deal *Deal)             {}
+func (s *BaseRoomManager) OnStand(c interface{}, stand *Stand)          {}
+func (s *BaseRoomManager) OnHit(c interface{}, hit *Hit)                {}
+func (s *BaseRoomManager) OnDouble(c interface{}, double *Double)       {}
+func (s *BaseRoomManager) OnPlayGame(c interface{}, playGame *PlayGame) {
+	fmt.Printf("expo type %T", playGame)
+}
