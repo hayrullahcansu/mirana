@@ -37,6 +37,7 @@ type Stand struct {
 type Hit struct {
 	Id         string `json:"id"`
 	InternalId string `json:"internal_id"`
+	Card       string `json:"card"`
 }
 
 type Double struct {

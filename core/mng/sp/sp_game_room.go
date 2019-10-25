@@ -1,19 +1,25 @@
 package sp
 
 import (
+	"container/list"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/hayrullahcansu/mirana/core/comm/netsp"
 	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"github.com/hayrullahcansu/mirana/core/mdl"
 	"github.com/hayrullahcansu/mirana/core/types/gs"
 )
 
 type SPGameRoom struct {
 	*netw.BaseRoomManager
-	Players   map[*netsp.NetSPClient]bool
-	GameState *gs.GameState
+	Players     map[*netsp.NetSPClient]bool
+	GameState   *gs.GameState
+	GamePlayers []*netsp.SPPlayer
+	Pack        *list.List
 }
 
 func NewSPGameRoom() *SPGameRoom {
@@ -21,6 +27,7 @@ func NewSPGameRoom() *SPGameRoom {
 		Players:         make(map[*netsp.NetSPClient]bool),
 		BaseRoomManager: netw.NewBaseRoomManager(),
 		GameState:       gs.NewGameState(),
+		GamePlayers:     make([]*netsp.SPPlayer, 6),
 	}
 	go gameRoom.ListenEvents()
 	return gameRoom
@@ -114,7 +121,7 @@ func (m *SPGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 func (m *SPGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
-		client.AddMoney(addMoney.Amount)
+		client.AddMoney(addMoney.InternalId, addMoney.Amount)
 		m.Broadcast <- &netw.Envelope{
 			Client: "client_id",
 			Message: &netw.AddMoney{
@@ -122,6 +129,93 @@ func (m *SPGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 				Amount:     addMoney.Amount,
 			},
 			MessageCode: netw.EAddMoney,
+		}
+	}
+}
+
+func (m *SPGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
+	client, ok := c.(*netsp.NetSPClient)
+	if ok {
+		client.Deal()
+		m.Broadcast <- &netw.Envelope{
+			Client: "client_id",
+			Message: &netw.Deal{
+				InternalId: deal.InternalId,
+			},
+			MessageCode: netw.EDeal,
+		}
+	}
+	everyoneDealed := true
+	for p, _ := range m.Players {
+		if !p.IsDeal {
+			everyoneDealed = false
+		}
+	}
+	if everyoneDealed {
+		go m.startGame()
+	}
+}
+
+func (m *SPGameRoom) startGame() {
+	m.Broadcast <- &netw.Envelope{
+		Client: "server",
+		Message: &netw.PlayGame{
+			Mode: "game_will_start_in_3",
+		},
+		MessageCode: netw.EPlayGame,
+	}
+	initializeDone := make(chan bool, 1)
+
+	func() {
+		m.init()
+		var indexer int = 0
+		for p1, _ := range m.Players {
+			if len(p1.Players) > 0 && p1.IsDeal {
+				for _, p := range p1.Players {
+					m.GamePlayers[indexer] = p
+				}
+			}
+		}
+		sort.Slice(m.GamePlayers, func(p, q int) bool {
+			return m.GamePlayers[p].InternalId < m.GamePlayers[q].InternalId
+		})
+
+		for _, val := range m.GamePlayers {
+			card := m.PopCard()
+			val.HitCard(card)
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.Hit{
+					InternalId: val.InternalId,
+					Card:       card.String(),
+				},
+				MessageCode: netw.EHit,
+			}
+			time.Sleep(time.Millisecond * 300)
+		}
+		initializeDone <- true
+	}()
+	time.Sleep(time.Second * 3)
+
+	<-initializeDone
+	close(initializeDone)
+
+}
+
+func (m *SPGameRoom) PopCard() *mdl.Card {
+	element := m.Pack.Front().Value
+	if element != nil {
+		return element.(*mdl.Card)
+	}
+	return nil
+}
+
+func (m *SPGameRoom) init() {
+	m.Pack = list.New()
+	for _, cardValue := range mdl.CardValues {
+		for _, cardType := range mdl.CardTypes {
+			card := mdl.NewCardData(cardType, cardValue)
+			m.Pack.PushBack(card)
 		}
 	}
 }
