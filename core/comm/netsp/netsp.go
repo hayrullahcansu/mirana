@@ -45,6 +45,7 @@ func NewSPPlayer(internalId string) *SPPlayer {
 	return &SPPlayer{
 		Amount:     0,
 		InternalId: internalId,
+		Cards:      make(map[string]*mdl.Card),
 	}
 }
 

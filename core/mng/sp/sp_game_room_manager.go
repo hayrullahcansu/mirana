@@ -31,10 +31,11 @@ func initialGameManagerInstance() {
 }
 
 func (manager *SPGameRoomManager) RequestPlayGame(c *netsp.NetSPClient) {
-	// g := NewSPGameRoom()
-	// manager.GameRooms[g] = true
-	// g.ConnectGame(c)
-	manager.DefaultRoom.ConnectGame(c)
+	g := NewSPGameRoom()
+	manager.GameRooms[g] = true
+	g.ConnectGame(c)
+	// manager.DefaultRoom.ConnectGame(c)
+
 	// m.Players[c] = true
 	// c.Notify = m.Notify
 	// m.Register <- c

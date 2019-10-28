@@ -1,8 +1,8 @@
 package sp
 
 import (
-	"container/list"
 	"fmt"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/hayrullahcansu/mirana/core/comm/netw"
 	"github.com/hayrullahcansu/mirana/core/mdl"
 	"github.com/hayrullahcansu/mirana/core/types/gs"
+	"github.com/hayrullahcansu/mirana/utils/que"
 )
 
 type SPGameRoom struct {
@@ -19,7 +20,8 @@ type SPGameRoom struct {
 	Players     map[*netsp.NetSPClient]bool
 	GameState   *gs.GameState
 	GamePlayers []*netsp.SPPlayer
-	Pack        *list.List
+	// Pack        *list.List
+	Pack *que.Queue
 }
 
 func NewSPGameRoom() *SPGameRoom {
@@ -27,7 +29,7 @@ func NewSPGameRoom() *SPGameRoom {
 		Players:         make(map[*netsp.NetSPClient]bool),
 		BaseRoomManager: netw.NewBaseRoomManager(),
 		GameState:       gs.NewGameState(),
-		GamePlayers:     make([]*netsp.SPPlayer, 6),
+		GamePlayers:     make([]*netsp.SPPlayer, 0, 6),
 	}
 	go gameRoom.ListenEvents()
 	return gameRoom
@@ -55,7 +57,6 @@ func (s *SPGameRoom) ListenEvents() {
 
 		}
 	}
-	fmt.Println("CIKTI")
 }
 
 func (s *SPGameRoom) OnNotify(notify *netw.Notify) {
@@ -172,14 +173,20 @@ func (m *SPGameRoom) startGame() {
 		for p1, _ := range m.Players {
 			if len(p1.Players) > 0 && p1.IsDeal {
 				for _, p := range p1.Players {
-					m.GamePlayers[indexer] = p
+					m.GamePlayers = append(m.GamePlayers, p)
+					indexer++
 				}
 			}
 		}
 		sort.Slice(m.GamePlayers, func(p, q int) bool {
+			pp := m.GamePlayers[p]
+			qq := m.GamePlayers[q]
+			if pp == nil || qq == nil {
+				fmt.Println("NİL GELDİ")
+				return false
+			}
 			return m.GamePlayers[p].InternalId < m.GamePlayers[q].InternalId
 		})
-
 		for _, val := range m.GamePlayers {
 			card := m.PopCard()
 			val.HitCard(card)
@@ -203,7 +210,7 @@ func (m *SPGameRoom) startGame() {
 }
 
 func (m *SPGameRoom) PopCard() *mdl.Card {
-	element := m.Pack.Front().Value
+	element := m.Pack.Dequeue()
 	if element != nil {
 		return element.(*mdl.Card)
 	}
@@ -211,11 +218,21 @@ func (m *SPGameRoom) PopCard() *mdl.Card {
 }
 
 func (m *SPGameRoom) init() {
-	m.Pack = list.New()
+	m.Pack = que.Init()
+	// var a = make([]interface{}, len(mdl.CardValues)*len(mdl.CardTypes)) // or slice := make([]int, elems)
+
+	var a []*mdl.Card
+	// var indexer = 0
 	for _, cardValue := range mdl.CardValues {
 		for _, cardType := range mdl.CardTypes {
-			card := mdl.NewCardData(cardType, cardValue)
-			m.Pack.PushBack(card)
+			c := mdl.NewCardData(cardType, cardValue)
+			a = append(a, c)
+			// a[indexer] =
 		}
+	}
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
+	for _, v := range a {
+		m.Pack.Enqueue(v)
 	}
 }
