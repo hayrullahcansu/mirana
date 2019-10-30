@@ -44,11 +44,10 @@ func (s *SPGameRoom) ListenEvents() {
 		case player := <-s.Unregister:
 			s.OnDisconnect(player)
 		case e := <-s.Broadcast:
+			fmt.Println("broadcast called")
 			for client := range s.Players {
 				select {
 				case client.Send <- e:
-				default:
-					client.Unregister <- client
 				}
 			}
 		case notify := <-s.Notify:
@@ -167,9 +166,10 @@ func (m *SPGameRoom) startGame() {
 	}
 	initializeDone := make(chan bool, 1)
 
-	func() {
+	go func() {
 		m.init()
 		var indexer int = 0
+
 		for p1, _ := range m.Players {
 			if len(p1.Players) > 0 && p1.IsDeal {
 				for _, p := range p1.Players {
@@ -178,6 +178,8 @@ func (m *SPGameRoom) startGame() {
 				}
 			}
 		}
+		fmt.Printf("size : %d", len(m.GamePlayers))
+
 		sort.Slice(m.GamePlayers, func(p, q int) bool {
 			pp := m.GamePlayers[p]
 			qq := m.GamePlayers[q]
@@ -187,9 +189,11 @@ func (m *SPGameRoom) startGame() {
 			}
 			return m.GamePlayers[p].InternalId < m.GamePlayers[q].InternalId
 		})
+		fmt.Printf("size after sort : %d", len(m.GamePlayers))
 		for _, val := range m.GamePlayers {
 			card := m.PopCard()
 			val.HitCard(card)
+			fmt.Printf("   card:%s", card.String())
 			m.Broadcast <- &netw.Envelope{
 				Client: "client_id",
 				Message: &netw.Hit{
