@@ -191,7 +191,7 @@ func (c *BaseClient) WritePump() {
 				log.Println(err)
 				return
 			}
-		default:
+			// default:
 		}
 	}
 }

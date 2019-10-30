@@ -38,8 +38,8 @@ func (s *BaseRoomManager) ListenEvents() {
 			break
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
-		default:
-			break
+			// default:
+			// break
 		}
 	}
 }

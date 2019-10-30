@@ -40,8 +40,8 @@ func (s *ExroomManager) ListenEvents() {
 			break
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
-		default:
-			break
+			// default:
+			// 	break
 		}
 	}
 }

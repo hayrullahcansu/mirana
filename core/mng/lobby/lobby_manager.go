@@ -42,7 +42,7 @@ func (s *LobbyManager) ListenEvents() {
 		case _ = <-s.Broadcast:
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
-		default:
+			// default:
 		}
 	}
 }

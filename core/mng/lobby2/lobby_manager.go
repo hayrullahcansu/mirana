@@ -60,14 +60,14 @@ func (s *LobbyManager) listenEvents() {
 			for player := range s.Players {
 				select {
 				case player.Client.Send <- message:
-				default:
-					s.Unregister <- player
+					// default:
+					// 	s.Unregister <- player
 				}
 			}
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
-		default:
-			break
+			// default:
+			// 	break
 		}
 	}
 }
