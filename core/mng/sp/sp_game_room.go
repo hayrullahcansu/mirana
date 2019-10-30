@@ -17,11 +17,14 @@ import (
 
 type SPGameRoom struct {
 	*netw.BaseRoomManager
-	Players     map[*netsp.NetSPClient]bool
-	GameState   *gs.GameState
-	GamePlayers []*netsp.SPPlayer
-	// Pack        *list.List
-	Pack *que.Queue
+	Players             map[*netsp.NetSPClient]bool
+	GameState           *gs.GameState
+	GamePlayers         []*netsp.SPPlayer
+	System              *netsp.SPPlayer
+	GameStateEvent      chan gs.GameStatu
+	CurrentPlayerCursor int
+	TurnOfPlay          string
+	Pack                *que.Queue
 }
 
 func NewSPGameRoom() *SPGameRoom {
@@ -30,8 +33,10 @@ func NewSPGameRoom() *SPGameRoom {
 		BaseRoomManager: netw.NewBaseRoomManager(),
 		GameState:       gs.NewGameState(),
 		GamePlayers:     make([]*netsp.SPPlayer, 0, 6),
+		GameStateEvent:  make(chan gs.GameStatu, 1),
 	}
 	go gameRoom.ListenEvents()
+	gameRoom.GameStateEvent <- gs.INIT
 	return gameRoom
 }
 
@@ -51,8 +56,9 @@ func (s *SPGameRoom) ListenEvents() {
 			}
 		case notify := <-s.Notify:
 			s.OnNotify(notify)
-			// default:
-
+		// default:
+		case gameStateEvent := <-s.GameStateEvent:
+			s.gameStateChanged(gameStateEvent)
 		}
 	}
 }
@@ -151,11 +157,12 @@ func (m *SPGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 		}
 	}
 	if everyoneDealed {
-		go m.startGame()
+		m.GameStateEvent <- gs.PREPARING
 	}
 }
 
 func (m *SPGameRoom) startGame() {
+	m.System = netsp.NewSPSystemPlayer()
 	m.Broadcast <- &netw.Envelope{
 		Client: "server",
 		Message: &netw.PlayGame{
@@ -166,7 +173,6 @@ func (m *SPGameRoom) startGame() {
 	initializeDone := make(chan bool, 1)
 
 	go func() {
-		m.init()
 		var indexer int = 0
 
 		for p1, _ := range m.Players {
@@ -177,7 +183,6 @@ func (m *SPGameRoom) startGame() {
 				}
 			}
 		}
-		fmt.Printf("size : %d", len(m.GamePlayers))
 
 		sort.Slice(m.GamePlayers, func(p, q int) bool {
 			pp := m.GamePlayers[p]
@@ -188,26 +193,57 @@ func (m *SPGameRoom) startGame() {
 			}
 			return m.GamePlayers[p].InternalId < m.GamePlayers[q].InternalId
 		})
-		for _, val := range m.GamePlayers {
-			card := m.PopCard()
-			val.HitCard(card)
-			m.Broadcast <- &netw.Envelope{
-				Client: "client_id",
-				Message: &netw.Hit{
-					InternalId: val.InternalId,
-					Card:       card.String(),
-				},
-				MessageCode: netw.EHit,
-			}
+		for _, player := range m.GamePlayers {
+			m.pull_card_for_player(player)
 			time.Sleep(time.Millisecond * 300)
 		}
+		m.pull_card_for_system()
+		m.CurrentPlayerCursor = len(m.GamePlayers) - 1
 		initializeDone <- true
 	}()
 	time.Sleep(time.Second * 3)
 
 	<-initializeDone
 	close(initializeDone)
+	m.GameStateEvent <- gs.IN_PLAY
 
+}
+
+// func (m *SPGameRoom) OnEvent(c interface{}, event *netw.Event) {
+// 	client, ok := c.(*netsp.NetSPClient)
+// 	if ok {
+// 		// client.AddMoney(addMoney.InternalId, addMoney.Amount)
+// 		// m.Broadcast <- &netw.Envelope{
+// 		// 	Client: "client_id",
+// 		// 	Message: &netw.AddMoney{
+// 		// 		InternalId: addMoney.InternalId,
+// 		// 		Amount:     addMoney.Amount,
+// 		// 	},
+// 		// 	MessageCode: netw.EAddMoney,
+// 		// }
+// 	}
+// }
+
+func (m *SPGameRoom) OnHit(c interface{}, hit *netw.Hit) {
+	_, ok := c.(*netsp.NetSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
+				m.pull_card_for_player(player)
+			}
+		}
+	}
+}
+
+func (m *SPGameRoom) OnStand(c interface{}, stand *netw.Stand) {
+	_, ok := c.(*netsp.NetSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
+				m.skip_next_player()
+			}
+		}
+	}
 }
 
 func (m *SPGameRoom) PopCard() *mdl.Card {
@@ -235,5 +271,72 @@ func (m *SPGameRoom) init() {
 	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
 	for _, v := range a {
 		m.Pack.Enqueue(v)
+	}
+}
+func (m *SPGameRoom) skip_next_player() {
+	m.CurrentPlayerCursor--
+	m.next_play()
+}
+func (m *SPGameRoom) next_play() {
+	if m.CurrentPlayerCursor > -1 {
+		m.in_play_step()
+	} else {
+		//TODO: if system need to pull card implement
+		//m.pull_card_for_system()
+		m.GameStateEvent <- gs.DONE
+	}
+}
+func (m *SPGameRoom) in_play_step() {
+	player := m.GamePlayers[m.CurrentPlayerCursor]
+	m.TurnOfPlay = player.InternalId
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Event{
+			InternalId: player.InternalId,
+			Code:       "turn_play",
+		},
+		MessageCode: netw.EEvent,
+	}
+}
+
+func (m *SPGameRoom) pull_card_for_system() {
+	card := m.PopCard()
+	m.System.HitCard(card)
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Hit{
+			InternalId: m.System.InternalId,
+			Card:       card.String(),
+			Visible:    m.System.CardVisibility(),
+		},
+		MessageCode: netw.EHit,
+	}
+}
+
+func (m *SPGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
+	card := m.PopCard()
+	player.HitCard(card)
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Hit{
+			InternalId: player.InternalId,
+			Card:       card.String(),
+			Visible:    player.CardVisibility(),
+		},
+		MessageCode: netw.EHit,
+	}
+}
+func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
+	switch state {
+	case gs.INIT:
+		m.init()
+		m.GameStateEvent <- gs.WAIT_PLAYERS
+	case gs.WAIT_PLAYERS:
+	case gs.PREPARING:
+		go m.startGame()
+	case gs.IN_PLAY:
+		m.in_play_step()
+	case gs.DONE:
+		fmt.Println("DONE")
 	}
 }

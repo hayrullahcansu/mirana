@@ -25,6 +25,7 @@ type SPPlayer struct {
 	Amount     float32
 	InternalId string
 	Cards      map[string]*mdl.Card
+	IsSystem   bool
 }
 
 func (c *NetSPClient) AddMoney(internalId string, amount float32) {
@@ -46,6 +47,16 @@ func NewSPPlayer(internalId string) *SPPlayer {
 		Amount:     0,
 		InternalId: internalId,
 		Cards:      make(map[string]*mdl.Card),
+		IsSystem:   false,
+	}
+}
+
+func NewSPSystemPlayer() *SPPlayer {
+	return &SPPlayer{
+		Amount:     0,
+		InternalId: "server",
+		Cards:      make(map[string]*mdl.Card),
+		IsSystem:   true,
 	}
 }
 
@@ -55,4 +66,12 @@ func (c *SPPlayer) addMoney(amount float32) {
 
 func (c *SPPlayer) HitCard(card *mdl.Card) {
 	c.Cards[card.String()] = card
+}
+
+func (c *SPPlayer) CardVisibility() bool {
+	if c.IsSystem && len(c.Cards) == 2 {
+		return false
+	} else {
+		return true
+	}
 }

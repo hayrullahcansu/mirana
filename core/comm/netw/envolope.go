@@ -7,9 +7,10 @@ type Envelope struct {
 }
 
 type Event struct {
-	Id      string `json:"id"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Id         string `json:"id"`
+	InternalId string `json:"internal_id"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
 }
 
 type Stamp struct {
@@ -38,6 +39,7 @@ type Hit struct {
 	Id         string `json:"id"`
 	InternalId string `json:"internal_id"`
 	Card       string `json:"card"`
+	Visible    bool   `json:"visible"`
 }
 
 type Double struct {

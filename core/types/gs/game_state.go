@@ -3,7 +3,6 @@ package gs
 var GameStatus = []GameStatu{
 	INIT,
 	WAIT_PLAYERS,
-	DEALING,
 	PREPARING,
 	IN_PLAY,
 	DONE,
@@ -14,7 +13,6 @@ type GameStatu int
 const (
 	INIT GameStatu = iota + 0
 	WAIT_PLAYERS
-	DEALING
 	PREPARING
 	IN_PLAY
 	DONE
