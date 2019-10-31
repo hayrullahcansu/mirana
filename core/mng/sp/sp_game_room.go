@@ -198,6 +198,11 @@ func (m *SPGameRoom) startGame() {
 			time.Sleep(time.Millisecond * 300)
 		}
 		m.pull_card_for_system()
+		for _, player := range m.GamePlayers {
+			m.pull_card_for_player(player)
+			time.Sleep(time.Millisecond * 300)
+		}
+		m.pull_card_for_system()
 		m.CurrentPlayerCursor = len(m.GamePlayers) - 1
 		initializeDone <- true
 	}()
