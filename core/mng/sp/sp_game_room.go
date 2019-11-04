@@ -342,6 +342,12 @@ func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
 	case gs.IN_PLAY:
 		m.in_play_step()
 	case gs.DONE:
-		fmt.Println("DONE")
+		m.checkWinLose()
+	}
+}
+
+func (m *SPGameRoom) checkWinLose() {
+	for _, player := range m.GamePlayers {
+		// player.HitCard()
 	}
 }
