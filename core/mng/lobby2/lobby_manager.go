@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hayrullahcansu/mirana/core/types"
+	"bitbucket.org/digitdreamteam/mirana/core/types"
 )
 
 type LobbyManager struct {

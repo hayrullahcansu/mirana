@@ -3,7 +3,7 @@ package sp
 import (
 	"sync"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netsp"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
 )
 
 type SPGameRoomManager struct {

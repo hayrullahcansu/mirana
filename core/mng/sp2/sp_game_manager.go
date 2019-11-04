@@ -3,7 +3,7 @@ package sp2
 // import (
 // 	"sync"
 
-// 	"github.com/hayrullahcansu/mirana/core/types"
+// 	"bitbucket.org/digitdreamteam/mirana/core/types"
 // )
 
 // type SPGameManager struct {

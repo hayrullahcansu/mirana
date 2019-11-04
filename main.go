@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hayrullahcansu/mirana/core/service"
-	"github.com/hayrullahcansu/mirana/cross"
+	"bitbucket.org/digitdreamteam/mirana/core/service"
+	"bitbucket.org/digitdreamteam/mirana/cross"
 )
 
 type aut struct {

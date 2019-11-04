@@ -3,8 +3,8 @@ package routes
 import (
 	"net/http"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netl"
-	"github.com/hayrullahcansu/mirana/core/mng/lobby"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netl"
+	"bitbucket.org/digitdreamteam/mirana/core/mng/lobby"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid

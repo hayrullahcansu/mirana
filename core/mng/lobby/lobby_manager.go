@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netl"
-	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netl"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 )
 
 type LobbyManager struct {

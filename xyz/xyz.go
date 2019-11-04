@@ -3,7 +3,7 @@ package xyz
 import (
 	"fmt"
 
-	"github.com/hayrullahcansu/mirana/xxx"
+	"bitbucket.org/digitdreamteam/mirana/xxx"
 )
 
 type XYZ struct {

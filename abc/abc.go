@@ -1,6 +1,6 @@
 package abc
 
-import "github.com/hayrullahcansu/mirana/xxx"
+import "bitbucket.org/digitdreamteam/mirana/xxx"
 
 type ABC struct {
 	xxx.BasePlayer

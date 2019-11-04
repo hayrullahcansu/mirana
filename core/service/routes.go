@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/hayrullahcansu/mirana/core/service/routes"
+	"bitbucket.org/digitdreamteam/mirana/core/service/routes"
 )
 
 var addr = flag.String("addr", "127.0.0.1:3535", "http service address")

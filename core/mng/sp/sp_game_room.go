@@ -8,11 +8,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netsp"
-	"github.com/hayrullahcansu/mirana/core/comm/netw"
-	"github.com/hayrullahcansu/mirana/core/mdl"
-	"github.com/hayrullahcansu/mirana/core/types/gs"
-	"github.com/hayrullahcansu/mirana/utils/que"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
+	"bitbucket.org/digitdreamteam/mirana/core/mdl"
+	"bitbucket.org/digitdreamteam/mirana/core/types/gs"
+	"bitbucket.org/digitdreamteam/mirana/utils/que"
 )
 
 type SPGameRoom struct {

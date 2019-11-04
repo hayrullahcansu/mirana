@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 )
 
 type ExroomManager struct {

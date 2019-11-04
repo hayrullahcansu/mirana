@@ -3,8 +3,8 @@ package routes
 import (
 	"net/http"
 
-	"github.com/hayrullahcansu/mirana/core/comm/netsp"
-	"github.com/hayrullahcansu/mirana/core/mng/sp"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
+	"bitbucket.org/digitdreamteam/mirana/core/mng/sp"
 )
 
 //JoinRoomMode1Handler hnadles login requests and authorize user who is valid

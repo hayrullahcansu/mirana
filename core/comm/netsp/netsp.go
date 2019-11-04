@@ -1,8 +1,8 @@
 package netsp
 
 import (
-	"github.com/hayrullahcansu/mirana/core/comm/netw"
-	"github.com/hayrullahcansu/mirana/core/mdl"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
+	"bitbucket.org/digitdreamteam/mirana/core/mdl"
 )
 
 type NetSPClient struct {

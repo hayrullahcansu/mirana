@@ -1,7 +1,7 @@
 package netl
 
 import (
-	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 )
 
 type NetLobbyClient struct {

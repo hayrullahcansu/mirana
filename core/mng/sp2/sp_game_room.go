@@ -4,8 +4,8 @@ package sp2
 // 	"container/list"
 // 	"fmt"
 
-// 	"github.com/hayrullahcansu/mirana/core/types"
-// 	"github.com/hayrullahcansu/mirana/core/types/gs"
+// 	"bitbucket.org/digitdreamteam/mirana/core/types"
+// 	"bitbucket.org/digitdreamteam/mirana/core/types/gs"
 // )
 
 // type SPGameRoom struct {
