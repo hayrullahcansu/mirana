@@ -347,7 +347,7 @@ func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
 }
 
 func (m *SPGameRoom) checkWinLose() {
-	for _, player := range m.GamePlayers {
+	for _, _ = range m.GamePlayers {
 		// player.HitCard()
 	}
 }
