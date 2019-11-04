@@ -3,6 +3,7 @@ package netsp
 import (
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
+	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
 )
 
 type NetSPClient struct {
@@ -28,6 +29,7 @@ type SPPlayer struct {
 	IsSystem   bool
 	Point      int
 	Point2     int
+	GameResult gr.GameResult
 }
 
 func (c *NetSPClient) AddMoney(internalId string, amount float32) {
@@ -68,13 +70,41 @@ func (c *SPPlayer) addMoney(amount float32) {
 
 func (c *SPPlayer) HitCard(card *mdl.Card) {
 	c.Cards[card.String()] = card
-	// s1 := 0
-	// s2 := 0
-	// var asExists = false
-	// for _, card := range c.Cards {
-	// 	// if(card.CardValue == mdl._1)
+	s1 := 0
+	s2 := 0
+	var asExists = false
+	for _, card := range c.Cards {
+		if card.CardValue == mdl.CV_1 {
+			asExists = true
+		}
+		val := card.CardValue.Value()
+		s1 += val
+		if asExists {
+			s1 += 10
+		}
+	}
+	if asExists {
+		s2 = s1
+	}
+	c.Point = s1
+	c.Point2 = s2
+	if c.isOver21Limit() {
+		c.GameResult = gr.LOSE
+	}
+}
 
-	// }
+func (c *SPPlayer) isOver21Limit() bool {
+	if c.Point > 21 && c.Point2 > 0 {
+		c.Point = c.Point2
+	} else if c.Point2 > 21 {
+		c.Point = c.Point
+	}
+
+	if c.Point > 21 && c.Point2 > 21 {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (c *SPPlayer) CardVisibility() bool {

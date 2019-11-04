@@ -18,51 +18,51 @@ func NewCardData(cardType CardType, cardValue CardValue) *Card {
 type CardType int
 
 const (
-	_Clubs CardType = iota + 0
-	_Diamonds
-	_Hearts
-	_Spades
+	CT_Clubs CardType = iota + 0
+	CT_Diamonds
+	CT_Hearts
+	CT_Spades
 )
 
 var CardTypes = []CardType{
-	_Clubs,
-	_Diamonds,
-	_Hearts,
-	_Spades,
+	CT_Clubs,
+	CT_Diamonds,
+	CT_Hearts,
+	CT_Spades,
 }
 
 type CardValue int
 
 const (
-	_1 CardValue = iota + 0
-	_2
-	_3
-	_4
-	_5
-	_6
-	_7
-	_8
-	_9
-	_10
-	_JACK
-	_QUEEN
-	_KING
+	CV_1 CardValue = iota + 0
+	CV_2
+	CV_3
+	CV_4
+	CV_5
+	CV_6
+	CV_7
+	CV_8
+	CV_9
+	CV_10
+	CV_JACK
+	CV_QUEEN
+	CV_KING
 )
 
 var CardValues = []CardValue{
-	_1,
-	_2,
-	_3,
-	_4,
-	_5,
-	_6,
-	_7,
-	_8,
-	_9,
-	_10,
-	_JACK,
-	_QUEEN,
-	_KING,
+	CV_1,
+	CV_2,
+	CV_3,
+	CV_4,
+	CV_5,
+	CV_6,
+	CV_7,
+	CV_8,
+	CV_9,
+	CV_10,
+	CV_JACK,
+	CV_QUEEN,
+	CV_KING,
 }
 
 func (c *Card) String() string {
@@ -87,33 +87,33 @@ func parseCard(input string) *Card {
 func parseValue(input string) CardValue {
 	switch input {
 	case "1":
-		return _1
+		return CV_1
 	case "2":
-		return _2
+		return CV_2
 	case "3":
-		return _3
+		return CV_3
 	case "4":
-		return _4
+		return CV_4
 	case "5":
-		return _5
+		return CV_5
 	case "6":
-		return _6
+		return CV_6
 	case "7":
-		return _7
+		return CV_7
 	case "8":
-		return _8
+		return CV_8
 	case "9":
-		return _9
+		return CV_9
 	case "10":
-		return _10
+		return CV_10
 	case "J":
-		return _JACK
+		return CV_JACK
 	case "Q":
-		return _QUEEN
+		return CV_QUEEN
 	case "K":
-		return _KING
+		return CV_KING
 	default:
-		return _KING
+		return CV_KING
 
 	}
 }
@@ -121,60 +121,94 @@ func parseValue(input string) CardValue {
 func parseType(input string) CardType {
 	switch input {
 	case "C":
-		return _Clubs
+		return CT_Clubs
 	case "D":
-		return _Diamonds
+		return CT_Diamonds
 	case "H":
-		return _Hearts
+		return CT_Hearts
 	case "S":
-		return _Spades
+		return CT_Spades
 	default:
-		return _Spades
+		return CT_Spades
 	}
 }
 func (c CardValue) string() string {
 	switch c {
-	case _1:
+	case CV_1:
 		return "1"
-	case _2:
+	case CV_2:
 		return "2"
-	case _3:
+	case CV_3:
 		return "3"
-	case _4:
+	case CV_4:
 		return "4"
-	case _5:
+	case CV_5:
 		return "5"
-	case _6:
+	case CV_6:
 		return "6"
-	case _7:
+	case CV_7:
 		return "7"
-	case _8:
+	case CV_8:
 		return "8"
-	case _9:
+	case CV_9:
 		return "9"
-	case _10:
+	case CV_10:
 		return "10"
-	case _JACK:
+	case CV_JACK:
 		return "J"
-	case _QUEEN:
+	case CV_QUEEN:
 		return "Q"
-	case _KING:
+	case CV_KING:
 		return "K"
 	default:
 		return "K"
+
+	}
+}
+
+func (c CardValue) Value() int {
+	switch c {
+	case CV_1:
+		return 1
+	case CV_2:
+		return 2
+	case CV_3:
+		return 3
+	case CV_4:
+		return 4
+	case CV_5:
+		return 5
+	case CV_6:
+		return 6
+	case CV_7:
+		return 7
+	case CV_8:
+		return 8
+	case CV_9:
+		return 9
+	case CV_10:
+		return 10
+	case CV_JACK:
+		return 10
+	case CV_QUEEN:
+		return 10
+	case CV_KING:
+		return 10
+	default:
+		return 10
 
 	}
 }
 
 func (c CardType) string() string {
 	switch c {
-	case _Clubs:
+	case CT_Clubs:
 		return "C"
-	case _Diamonds:
+	case CT_Diamonds:
 		return "D"
-	case _Hearts:
+	case CT_Hearts:
 		return "H"
-	case _Spades:
+	case CT_Spades:
 		return "S"
 	default:
 		return "S"

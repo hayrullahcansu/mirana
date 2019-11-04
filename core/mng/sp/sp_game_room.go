@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
+	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
 	"bitbucket.org/digitdreamteam/mirana/core/types/gs"
 	"bitbucket.org/digitdreamteam/mirana/utils/que"
 )
@@ -347,7 +348,34 @@ func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
 }
 
 func (m *SPGameRoom) checkWinLose() {
-	for _, _ = range m.GamePlayers {
-		// player.HitCard()
+	// players := make([]*netsp.SPPlayer, 0, 6)
+	// for _, p := range m.GamePlayers {
+
+	// }
+	sort.Slice(m.GamePlayers, func(i, j int) bool {
+		return m.GamePlayers[i].Point < m.GamePlayers[j].Point
+	})
+	sort.Slice(m.GamePlayers, func(i, j int) bool {
+		return m.GamePlayers[i].Point > m.GamePlayers[j].Point && m.GamePlayers[i].Point <= 21
+	})
+	var winnerFlag bool = false
+	for _, p := range m.GamePlayers {
+		if p.Point == 21 {
+			p.GameResult = gr.WIN
+			winnerFlag = true
+		} else if p.Point < 21 && !winnerFlag {
+			p.GameResult = gr.WIN
+			winnerFlag = true
+		} else {
+			p.GameResult = gr.LOSE
+		}
+	}
+
+	for _, p := range m.GamePlayers {
+		if p.GameResult == gr.WIN {
+			fmt.Printf("Winner %s\n", p.InternalId)
+		} else {
+			fmt.Printf("Loser %s\n", p.InternalId)
+		}
 	}
 }
