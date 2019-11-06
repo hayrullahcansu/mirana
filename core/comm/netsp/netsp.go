@@ -23,13 +23,15 @@ func NewClient() *NetSPClient {
 }
 
 type SPPlayer struct {
-	Amount     float32
-	InternalId string
-	Cards      map[string]*mdl.Card
-	IsSystem   bool
-	Point      int
-	Point2     int
-	GameResult gr.GameResult
+	Amount      float32
+	InternalId  string
+	Cards       []*mdl.Card
+	IsSystem    bool
+	Point       int
+	Point2      int
+	IsSplit     bool
+	IsInsurance bool
+	GameResult  gr.GameResult
 }
 
 func (c *NetSPClient) AddMoney(internalId string, amount float32) {
@@ -43,6 +45,13 @@ func (c *NetSPClient) AddMoney(internalId string, amount float32) {
 	}
 }
 
+func (c *NetSPClient) SetInsurance(internalId string, insurance bool) {
+	p, ok := c.Players[internalId]
+	if ok {
+		p.IsInsurance = insurance
+	}
+}
+
 func (c *NetSPClient) Deal() {
 	c.IsDeal = true
 }
@@ -50,7 +59,7 @@ func NewSPPlayer(internalId string) *SPPlayer {
 	return &SPPlayer{
 		Amount:     0,
 		InternalId: internalId,
-		Cards:      make(map[string]*mdl.Card),
+		Cards:      make([]*mdl.Card, 0, 10),
 		IsSystem:   false,
 	}
 }
@@ -59,7 +68,7 @@ func NewSPSystemPlayer() *SPPlayer {
 	return &SPPlayer{
 		Amount:     0,
 		InternalId: "server",
-		Cards:      make(map[string]*mdl.Card),
+		Cards:      make([]*mdl.Card, 0, 10),
 		IsSystem:   true,
 	}
 }
@@ -69,7 +78,7 @@ func (c *SPPlayer) addMoney(amount float32) {
 }
 
 func (c *SPPlayer) HitCard(card *mdl.Card) {
-	c.Cards[card.String()] = card
+	c.Cards = append(c.Cards, card)
 	s1 := 0
 	s2 := 0
 	var asExists = false
@@ -99,7 +108,9 @@ func (c *SPPlayer) isOver21Limit() bool {
 	} else if c.Point2 > 21 {
 		c.Point = c.Point
 	}
-
+	if (c.Point == 21 || c.Point2 == 21) && !c.IsSplit {
+		c.GameResult = gr.BLACKJACK
+	}
 	if c.Point > 21 && c.Point2 > 21 {
 		return false
 	} else {
@@ -113,4 +124,11 @@ func (c *SPPlayer) CardVisibility() bool {
 	} else {
 		return true
 	}
+}
+
+func (c *SPPlayer) HasAceFirstCard() bool {
+	if len(c.Cards) > 0 && c.Cards[0].CardValue == mdl.CV_1 {
+		return true
+	}
+	return false
 }

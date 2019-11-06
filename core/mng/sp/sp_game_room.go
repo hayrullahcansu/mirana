@@ -16,7 +16,7 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/utils/que"
 )
 
-type SPGameRoom struct {
+type SingleDeckGameRoom struct {
 	*netw.BaseRoomManager
 	Players             map[*netsp.NetSPClient]bool
 	GameState           *gs.GameState
@@ -28,8 +28,8 @@ type SPGameRoom struct {
 	Pack                *que.Queue
 }
 
-func NewSPGameRoom() *SPGameRoom {
-	gameRoom := &SPGameRoom{
+func NewSPGameRoom() *SingleDeckGameRoom {
+	gameRoom := &SingleDeckGameRoom{
 		Players:         make(map[*netsp.NetSPClient]bool),
 		BaseRoomManager: netw.NewBaseRoomManager(),
 		GameState:       gs.NewGameState(),
@@ -41,7 +41,7 @@ func NewSPGameRoom() *SPGameRoom {
 	return gameRoom
 }
 
-func (s *SPGameRoom) ListenEvents() {
+func (s *SingleDeckGameRoom) ListenEvents() {
 	fmt.Println("GIRDI")
 	for {
 		select {
@@ -64,7 +64,7 @@ func (s *SPGameRoom) ListenEvents() {
 	}
 }
 
-func (s *SPGameRoom) OnNotify(notify *netw.Notify) {
+func (s *SingleDeckGameRoom) OnNotify(notify *netw.Notify) {
 	d := notify.Message.Message
 	switch v := notify.Message.Message.(type) {
 	case netw.Event:
@@ -96,19 +96,19 @@ func (s *SPGameRoom) OnNotify(notify *netw.Notify) {
 	}
 }
 
-func (m *SPGameRoom) ConnectGame(c *netsp.NetSPClient) {
+func (m *SingleDeckGameRoom) ConnectGame(c *netsp.NetSPClient) {
 	m.Players[c] = true
 	c.Notify = m.Notify
 	m.Register <- c
 }
 
-func (m *SPGameRoom) OnConnect(c interface{}) {
+func (m *SingleDeckGameRoom) OnConnect(c interface{}) {
 	_, ok := c.(*netsp.NetSPClient)
 	if ok {
 
 	}
 }
-func (m *SPGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
+func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		//TODO: check player able to play?
@@ -124,7 +124,7 @@ func (m *SPGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 	}
 }
 
-func (m *SPGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
+func (m *SingleDeckGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		client.AddMoney(addMoney.InternalId, addMoney.Amount)
@@ -139,7 +139,7 @@ func (m *SPGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	}
 }
 
-func (m *SPGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
+func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		client.Deal()
@@ -162,7 +162,7 @@ func (m *SPGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	}
 }
 
-func (m *SPGameRoom) startGame() {
+func (m *SingleDeckGameRoom) startGame() {
 	m.System = netsp.NewSPSystemPlayer()
 	m.Broadcast <- &netw.Envelope{
 		Client: "server",
@@ -208,29 +208,42 @@ func (m *SPGameRoom) startGame() {
 		initializeDone <- true
 	}()
 	time.Sleep(time.Second * 3)
-
 	<-initializeDone
 	close(initializeDone)
-	m.GameStateEvent <- gs.IN_PLAY
-
+	if m.System.HasAceFirstCard() {
+		m.GameStateEvent <- gs.ASK_INSURANCE
+	} else {
+		m.GameStateEvent <- gs.IN_PLAY
+	}
 }
 
-// func (m *SPGameRoom) OnEvent(c interface{}, event *netw.Event) {
-// 	client, ok := c.(*netsp.NetSPClient)
-// 	if ok {
-// 		// client.AddMoney(addMoney.InternalId, addMoney.Amount)
-// 		// m.Broadcast <- &netw.Envelope{
-// 		// 	Client: "client_id",
-// 		// 	Message: &netw.AddMoney{
-// 		// 		InternalId: addMoney.InternalId,
-// 		// 		Amount:     addMoney.Amount,
-// 		// 	},
-// 		// 	MessageCode: netw.EAddMoney,
-// 		// }
-// 	}
-// }
+func (m *SingleDeckGameRoom) ask_insurance() {
+	for _, player := range m.GamePlayers {
+		m.pull_card_for_player(player)
+		time.Sleep(time.Millisecond * 300)
+	}
+}
 
-func (m *SPGameRoom) OnHit(c interface{}, hit *netw.Hit) {
+func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
+	client, ok := c.(*netsp.NetSPClient)
+	if ok && event.Code == "insurance" {
+		insurance := false
+		if event.Message == "true" {
+			insurance = true
+		}
+		client.SetInsurance(event.InternalId, insurance)
+		// m.Broadcast <- &netw.Envelope{
+		// 	Client: "client_id",
+		// 	Message: &netw.AddMoney{
+		// 		InternalId: addMoney.InternalId,
+		// 		Amount:     addMoney.Amount,
+		// 	},
+		// 	MessageCode: netw.EAddMoney,
+		// }
+	}
+}
+
+func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 	_, ok := c.(*netsp.NetSPClient)
 	if ok {
 		for _, player := range m.GamePlayers {
@@ -241,7 +254,7 @@ func (m *SPGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 	}
 }
 
-func (m *SPGameRoom) OnStand(c interface{}, stand *netw.Stand) {
+func (m *SingleDeckGameRoom) OnStand(c interface{}, stand *netw.Stand) {
 	_, ok := c.(*netsp.NetSPClient)
 	if ok {
 		for _, player := range m.GamePlayers {
@@ -252,7 +265,7 @@ func (m *SPGameRoom) OnStand(c interface{}, stand *netw.Stand) {
 	}
 }
 
-func (m *SPGameRoom) PopCard() *mdl.Card {
+func (m *SingleDeckGameRoom) PopCard() *mdl.Card {
 	element := m.Pack.Dequeue()
 	if element != nil {
 		return element.(*mdl.Card)
@@ -260,7 +273,7 @@ func (m *SPGameRoom) PopCard() *mdl.Card {
 	return nil
 }
 
-func (m *SPGameRoom) init() {
+func (m *SingleDeckGameRoom) init() {
 	m.Pack = que.Init()
 	// var a = make([]interface{}, len(mdl.CardValues)*len(mdl.CardTypes)) // or slice := make([]int, elems)
 
@@ -279,20 +292,20 @@ func (m *SPGameRoom) init() {
 		m.Pack.Enqueue(v)
 	}
 }
-func (m *SPGameRoom) skip_next_player() {
+func (m *SingleDeckGameRoom) skip_next_player() {
 	m.CurrentPlayerCursor--
 	m.next_play()
 }
-func (m *SPGameRoom) next_play() {
+func (m *SingleDeckGameRoom) next_play() {
 	if m.CurrentPlayerCursor > -1 {
-		m.in_play_step()
+		m.send_turn_play_message_current_player()
 	} else {
 		//TODO: if system need to pull card implement
 		//m.pull_card_for_system()
 		m.GameStateEvent <- gs.DONE
 	}
 }
-func (m *SPGameRoom) in_play_step() {
+func (m *SingleDeckGameRoom) send_turn_play_message_current_player() {
 	player := m.GamePlayers[m.CurrentPlayerCursor]
 	m.TurnOfPlay = player.InternalId
 	m.Broadcast <- &netw.Envelope{
@@ -305,7 +318,7 @@ func (m *SPGameRoom) in_play_step() {
 	}
 }
 
-func (m *SPGameRoom) pull_card_for_system() {
+func (m *SingleDeckGameRoom) pull_card_for_system() {
 	card := m.PopCard()
 	m.System.HitCard(card)
 	m.Broadcast <- &netw.Envelope{
@@ -319,7 +332,7 @@ func (m *SPGameRoom) pull_card_for_system() {
 	}
 }
 
-func (m *SPGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
+func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 	card := m.PopCard()
 	player.HitCard(card)
 	m.Broadcast <- &netw.Envelope{
@@ -332,7 +345,7 @@ func (m *SPGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 		MessageCode: netw.EHit,
 	}
 }
-func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
+func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
 	switch state {
 	case gs.INIT:
 		m.init()
@@ -340,14 +353,16 @@ func (m *SPGameRoom) gameStateChanged(state gs.GameStatu) {
 	case gs.WAIT_PLAYERS:
 	case gs.PREPARING:
 		go m.startGame()
+	case gs.ASK_INSURANCE:
+		go m.ask_insurance()
 	case gs.IN_PLAY:
-		m.in_play_step()
+		m.send_turn_play_message_current_player()
 	case gs.DONE:
 		m.checkWinLose()
 	}
 }
 
-func (m *SPGameRoom) checkWinLose() {
+func (m *SingleDeckGameRoom) checkWinLose() {
 	// players := make([]*netsp.SPPlayer, 0, 6)
 	// for _, p := range m.GamePlayers {
 

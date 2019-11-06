@@ -14,22 +14,34 @@ func Init() *Queue {
 }
 
 func (q *Queue) Enqueue(x interface{}) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
 	for {
-		q.lock.Lock()
 		q.Values = append(q.Values, x)
-		q.lock.Unlock()
 		return
 	}
 }
 
 func (q *Queue) Dequeue() interface{} {
+	q.lock.Lock()
+	defer q.lock.Unlock()
 	for {
 		if len(q.Values) > 0 {
-			q.lock.Lock()
 			x := q.Values[0]
 			q.Values = q.Values[1:]
-			q.lock.Unlock()
 			return x
+		}
+		return nil
+	}
+	return nil
+}
+
+func (q *Queue) Get(index int) interface{} {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	for {
+		if len(q.Values) > index {
+			return q.Values[index]
 		}
 		return nil
 	}

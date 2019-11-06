@@ -1,7 +1,3 @@
 {
-    "go.coverOnTestPackage": false,
-    "go.formatFlags": [
-        "-s"
-    ],
-    "go.formatTool": "goimports"
+  
 }

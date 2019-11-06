@@ -4,6 +4,7 @@ var GameStatus = []GameStatu{
 	INIT,
 	WAIT_PLAYERS,
 	PREPARING,
+	ASK_INSURANCE,
 	IN_PLAY,
 	DONE,
 }
@@ -14,6 +15,7 @@ const (
 	INIT GameStatu = iota + 0
 	WAIT_PLAYERS
 	PREPARING
+	ASK_INSURANCE
 	IN_PLAY
 	DONE
 )
