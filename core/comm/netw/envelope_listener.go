@@ -4,6 +4,7 @@ type EnvelopeListener interface {
 	OnNotify(notify *Notify)
 	OnEvent(c interface{}, event *Event)
 	OnStamp(c interface{}, stamp *Stamp)
+	OnSplit(c interface{}, stamp *Split)
 	OnAddMoney(c interface{}, addMoney *AddMoney)
 	OnDeal(c interface{}, deal *Deal)
 	OnStand(c interface{}, stand *Stand)

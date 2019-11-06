@@ -7,8 +7,8 @@ import (
 )
 
 type SPGameRoomManager struct {
-	GameRooms   map[*SingleDeckGameRoom]bool
-	DefaultRoom *SingleDeckGameRoom
+	GameRooms   map[*SPGameRoom]bool
+	DefaultRoom *SPGameRoom
 	// RoomManager *RoomManager
 	// Lobby       *Lobby
 	// Users       map[int]*dto.PlayerDto
@@ -25,7 +25,7 @@ func Manager() *SPGameRoomManager {
 
 func initialGameManagerInstance() {
 	_instance = &SPGameRoomManager{
-		GameRooms:   make(map[*SingleDeckGameRoom]bool),
+		GameRooms:   make(map[*SPGameRoom]bool),
 		DefaultRoom: NewSPGameRoom(),
 	}
 }

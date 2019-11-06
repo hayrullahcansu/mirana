@@ -1,6 +1,9 @@
 package netsp
 
 import (
+	"fmt"
+	"strings"
+
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
 	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
@@ -31,6 +34,7 @@ type SPPlayer struct {
 	Point2      int
 	IsSplit     bool
 	IsInsurance bool
+	CanSplit    bool
 	GameResult  gr.GameResult
 }
 
@@ -55,6 +59,16 @@ func (c *NetSPClient) SetInsurance(internalId string, insurance bool) {
 func (c *NetSPClient) Deal() {
 	c.IsDeal = true
 }
+func NewSplitedSPPlayer(ref *SPPlayer) *SPPlayer {
+	return &SPPlayer{
+		Amount:     ref.Amount,
+		InternalId: ref.InternalId + "s",
+		Cards:      make([]*mdl.Card, 0, 10),
+		IsSystem:   false,
+		IsSplit:    true,
+	}
+}
+
 func NewSPPlayer(internalId string) *SPPlayer {
 	return &SPPlayer{
 		Amount:     0,
@@ -77,29 +91,24 @@ func (c *SPPlayer) addMoney(amount float32) {
 	c.Amount += amount
 }
 
+func (c *SPPlayer) RemoveCard(index int) *mdl.Card {
+	tempCard := c.Cards[index]
+	c.Cards = append(c.Cards[:index], c.Cards[index+1:]...)
+	c.calculateScore()
+	return tempCard
+}
 func (c *SPPlayer) HitCard(card *mdl.Card) {
 	c.Cards = append(c.Cards, card)
-	s1 := 0
-	s2 := 0
-	var asExists = false
-	for _, card := range c.Cards {
-		if card.CardValue == mdl.CV_1 {
-			asExists = true
-		}
-		val := card.CardValue.Value()
-		s1 += val
-		if asExists {
-			s1 += 10
-		}
+	c.calculateScore()
+	c.setCanSplit()
+}
+
+func (c *SPPlayer) GetCardStringCommaDelemited() string {
+	reg := make([]string, len(c.Cards))
+	for i, card := range c.Cards {
+		reg[i] = card.String()
 	}
-	if asExists {
-		s2 = s1
-	}
-	c.Point = s1
-	c.Point2 = s2
-	if c.isOver21Limit() {
-		c.GameResult = gr.LOSE
-	}
+	return strings.Join(reg[:], ",")
 }
 
 func (c *SPPlayer) isOver21Limit() bool {
@@ -108,7 +117,7 @@ func (c *SPPlayer) isOver21Limit() bool {
 	} else if c.Point2 > 21 {
 		c.Point = c.Point
 	}
-	if (c.Point == 21 || c.Point2 == 21) && !c.IsSplit {
+	if c.Point == 21 || c.Point2 == 21 {
 		c.GameResult = gr.BLACKJACK
 	}
 	if c.Point > 21 && c.Point2 > 21 {
@@ -131,4 +140,38 @@ func (c *SPPlayer) HasAceFirstCard() bool {
 		return true
 	}
 	return false
+}
+
+func (c *SPPlayer) setCanSplit() {
+	if len(c.Cards) == 2 {
+		fmt.Printf(".")
+	}
+	if !c.IsSplit && len(c.Cards) == 2 && c.Cards[0].CardValue.Value() == c.Cards[1].CardValue.Value() {
+		c.CanSplit = true
+	} else {
+		c.CanSplit = false
+	}
+}
+func (c *SPPlayer) calculateScore() {
+	s1 := 0
+	s2 := 0
+	var asExists = false
+	for _, card := range c.Cards {
+		if card.CardValue == mdl.CV_1 {
+			asExists = true
+		}
+		val := card.CardValue.Value()
+		s1 += val
+		if asExists {
+			s1 += 10
+		}
+	}
+	if asExists {
+		s2 = s1
+	}
+	c.Point = s1
+	c.Point2 = s2
+	if c.isOver21Limit() {
+		c.GameResult = gr.LOSE
+	}
 }

@@ -18,6 +18,15 @@ type Stamp struct {
 	InternalId string `json:"internal_id"`
 }
 
+type Split struct {
+	Id                 string  `json:"id"`
+	InternalId         string  `json:"internal_id"`
+	Ref                string  `json:"ref"`
+	Amount             float32 `json:"amount"`
+	RefCards           string  `json:"ref_cards"`
+	SplitedPlayerCards string  `json:"splitted_cards"`
+}
+
 type AddMoney struct {
 	Id         string  `json:"id"`
 	InternalId string  `json:"internal_id"`
@@ -65,6 +74,7 @@ const (
 	EHit                  // 5
 	EDouble               // 6
 	EPlayGame             // 7
+	ESplit                // 8
 )
 
 var MessageCodes = []MessageCode{
@@ -76,4 +86,5 @@ var MessageCodes = []MessageCode{
 	EHit,
 	EDouble,
 	EPlayGame,
+	ESplit,
 }

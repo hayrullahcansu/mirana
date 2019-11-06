@@ -61,6 +61,9 @@ func (s *BaseRoomManager) OnNotify(notify *Notify) {
 	case Stamp:
 		t := d.(Stamp)
 		s.OnStamp(notify.SentBy, &t)
+	case Split:
+		t := d.(Split)
+		s.OnSplit(notify.SentBy, &t)
 	case AddMoney:
 		t := d.(AddMoney)
 		s.OnAddMoney(notify.SentBy, &t)
@@ -86,6 +89,7 @@ func (s *BaseRoomManager) OnNotify(notify *Notify) {
 
 func (s *BaseRoomManager) OnEvent(c interface{}, event *Event)          {}
 func (s *BaseRoomManager) OnStamp(c interface{}, stamp *Stamp)          {}
+func (s *BaseRoomManager) OnSplit(c interface{}, stamp *Split)          {}
 func (s *BaseRoomManager) OnAddMoney(c interface{}, addMoney *AddMoney) {}
 func (s *BaseRoomManager) OnDeal(c interface{}, deal *Deal)             {}
 func (s *BaseRoomManager) OnStand(c interface{}, stand *Stand)          {}

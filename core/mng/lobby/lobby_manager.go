@@ -56,6 +56,9 @@ func (s *LobbyManager) OnNotify(notify *netw.Notify) {
 	case netw.Stamp:
 		t := d.(netw.Stamp)
 		s.OnStamp(notify.SentBy, &t)
+	case netw.Split:
+		t := d.(netw.Split)
+		s.OnSplit(notify.SentBy, &t)
 	case netw.AddMoney:
 		t := d.(netw.AddMoney)
 		s.OnAddMoney(notify.SentBy, &t)
