@@ -185,13 +185,19 @@ func (c *BaseClient) WritePump() {
 			}
 			//TextMessage denotes a text data message.
 			// The text message payload is interpreted as UTF-8 encoded text data.
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			w, err := c.Conn.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return
 			}
-			msg, _ := json.Marshal(message)
-			log.Println(string(msg[:]))
-			w.Write(msg)
+			msgToClient, _ := json.Marshal(message.Message)
+			msg := &EnvelopeStaging{
+				Client:      message.Client,
+				MessageCode: message.MessageCode,
+				Message:     string(msgToClient[:]),
+			}
+			msgToClient, _ = json.Marshal(msg)
+			log.Println(string(msgToClient[:]))
+			w.Write(msgToClient)
 			if err := w.Close(); err != nil {
 				log.Println(err)
 				return

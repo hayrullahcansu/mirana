@@ -6,6 +6,12 @@ type Envelope struct {
 	Message     interface{} `json:"msg,omitempty"`
 }
 
+type EnvelopeStaging struct {
+	Client      string      `json:"client"`
+	MessageCode MessageCode `json:"msg_code"`
+	Message     string      `json:"msg,omitempty"`
+}
+
 type Event struct {
 	Id         string `json:"id"`
 	InternalId string `json:"internal_id"`
