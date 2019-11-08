@@ -22,7 +22,7 @@ func NewBaseRoomManager() *BaseRoomManager {
 		Register:   make(chan interface{}, 1),
 		Unregister: make(chan interface{}, 1),
 		Notify:     make(chan *Notify, 1),
-		Broadcast:  make(chan *Envelope, 1),
+		Broadcast:  make(chan *Envelope, 10),
 	}
 }
 

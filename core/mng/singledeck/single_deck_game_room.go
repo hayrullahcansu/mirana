@@ -32,7 +32,7 @@ func NewSingleDeckGameRoom() *SingleDeckGameRoom {
 	gameRoom := &SingleDeckGameRoom{
 		BaseRoomManager: netw.NewBaseRoomManager(),
 		GameState:       gs.NewGameState(),
-		GamePlayers:     make([]*netsp.SPPlayer, 0, 6),
+		GamePlayers:     make([]*netsp.SPPlayer, 0, 12),
 		GameStateEvent:  make(chan gs.GameStatu, 1),
 	}
 	go gameRoom.ListenEvents()
@@ -262,14 +262,20 @@ func (m *SingleDeckGameRoom) split_player(client *netsp.NetSPClient, internalId 
 	player.HitCard(card)
 	card = m.PopCard()
 	splitedPlayer.HitCard(card)
+	m.GamePlayers = append(m.GamePlayers, splitedPlayer)
+	m.CurrentPlayerCursor++
+	copy(m.GamePlayers[m.CurrentPlayerCursor:], m.GamePlayers[m.CurrentPlayerCursor-1:])
+	m.GamePlayers[m.CurrentPlayerCursor-1] = splitedPlayer
+	RefCards := player.GetCardStringCommaDelemited()
+	SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
 	m.Broadcast <- &netw.Envelope{
 		Client: "client_id",
 		Message: &netw.Split{
 			InternalId:         splitedPlayer.InternalId,
 			Amount:             splitedPlayer.Amount,
 			Ref:                player.InternalId,
-			RefCards:           player.GetCardStringCommaDelemited(),
-			SplitedPlayerCards: splitedPlayer.GetCardStringCommaDelemited(),
+			RefCards:           RefCards,
+			SplitedPlayerCards: SplitedPlayerCards,
 		},
 		MessageCode: netw.ESplit,
 	}
@@ -355,7 +361,7 @@ func (m *SingleDeckGameRoom) next_play() {
 	if m.CurrentPlayerCursor > -1 {
 		m.send_turn_play_message_current_player()
 	} else {
-		//TODO: if system need to pull card implement
+		//TODO: dealer must standon soft 17
 		//m.pull_card_for_system()
 		m.GameStateEvent <- gs.DONE
 	}
@@ -398,6 +404,17 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 			Visible:    player.CardVisibility(),
 		},
 		MessageCode: netw.EHit,
+	}
+	if player.GameResult == gr.LOSE {
+		m.Broadcast <- &netw.Envelope{
+			Client: "client_id",
+			Message: &netw.Event{
+				InternalId: player.InternalId,
+				Code:       "player_lose",
+			},
+			MessageCode: netw.EEvent,
+		}
+		fmt.Println("lose" + player.InternalId)
 	}
 }
 func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {

@@ -20,6 +20,20 @@ type aut struct {
 }
 
 func main() {
+
+	a := []int{1, 2, 4, 5, 6}
+	b := 3
+
+	// Make space in the array for a new element. You can assign it any value.
+	a = append(a, 0)
+	fmt.Println(a)
+
+	// Copy over elements sourced from index 2, into elements starting at index 3.
+	copy(a[3:], a[2:])
+	fmt.Println(a)
+
+	a[2] = b
+	fmt.Println(a)
 	// fmt.Println(t1.TestMessage("TEST1"))
 	// t2 := &abc.ABC{}
 	// fmt.Println(t2.TestMessage("TEST2"))

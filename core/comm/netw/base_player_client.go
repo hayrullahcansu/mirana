@@ -150,6 +150,12 @@ func (c *BaseClient) ReadPump() {
 					log.Fatal(err)
 				}
 				env.Message = playGame
+			case ESplit:
+				var split Split
+				if err := json.Unmarshal(msg, &split); err != nil {
+					log.Fatal(err)
+				}
+				env.Message = split
 			default:
 				continue
 			}

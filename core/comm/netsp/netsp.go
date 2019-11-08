@@ -120,10 +120,10 @@ func (c *SPPlayer) isOver21Limit() bool {
 	if c.Point == 21 || c.Point2 == 21 {
 		c.GameResult = gr.BLACKJACK
 	}
-	if c.Point > 21 && c.Point2 > 21 {
-		return false
-	} else {
+	if c.Point > 21 {
 		return true
+	} else {
+		return false
 	}
 }
 
