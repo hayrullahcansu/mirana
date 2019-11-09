@@ -163,11 +163,11 @@ func (c *SPPlayer) calculateScore() {
 		val := card.CardValue.Value()
 		s1 += val
 		if asExists {
-			s1 += 10
+			s2 += 10
 		}
 	}
 	if asExists {
-		s2 = s1
+		s2 += s1
 	}
 	c.Point = s1
 	c.Point2 = s2

@@ -415,6 +415,7 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 			MessageCode: netw.EEvent,
 		}
 		fmt.Println("lose" + player.InternalId)
+		m.skip_next_player()
 	}
 }
 func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
