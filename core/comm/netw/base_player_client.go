@@ -51,7 +51,7 @@ type BaseClient struct {
 
 func NewBaseClient(extended interface{}) *BaseClient {
 	return &BaseClient{
-		Send:       make(chan *Envelope, 1),
+		Send:       make(chan *Envelope, 10),
 		Notify:     make(chan *Notify, 1),
 		Unregister: make(chan interface{}, 1),
 		SentBy:     extended,

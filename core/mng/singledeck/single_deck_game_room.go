@@ -16,10 +16,15 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/utils/que"
 )
 
+const (
+	STAND_ON_SOFT_POINT = 17
+)
+
 type SingleDeckGameRoom struct {
 	*netw.BaseRoomManager
 	PlayerConnection    *netsp.NetSPClient
 	GameState           *gs.GameState
+	GameStatu           gs.GameStatu
 	GamePlayers         []*netsp.SPPlayer
 	System              *netsp.SPPlayer
 	GameStateEvent      chan gs.GameStatu
@@ -34,6 +39,7 @@ func NewSingleDeckGameRoom() *SingleDeckGameRoom {
 		GameState:       gs.NewGameState(),
 		GamePlayers:     make([]*netsp.SPPlayer, 0, 12),
 		GameStateEvent:  make(chan gs.GameStatu, 1),
+		GameStatu:       gs.NONE,
 	}
 	go gameRoom.ListenEvents()
 	gameRoom.GameStateEvent <- gs.INIT
@@ -49,14 +55,20 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 		case player := <-s.Unregister:
 			s.OnDisconnect(player)
 		case e := <-s.Broadcast:
-			if s.PlayerConnection != nil {
-				s.PlayerConnection.Send <- e
-			}
+			go func() {
+				if s.PlayerConnection != nil {
+					s.PlayerConnection.Send <- e
+				}
+			}()
 		case notify := <-s.Notify:
-			s.OnNotify(notify)
+			go func() {
+				s.OnNotify(notify)
+			}()
 		// default:
 		case gameStateEvent := <-s.GameStateEvent:
-			s.gameStateChanged(gameStateEvent)
+			go func() {
+				s.gameStateChanged(gameStateEvent)
+			}()
 		}
 	}
 }
@@ -147,6 +159,10 @@ func (m *SingleDeckGameRoom) OnSplit(c interface{}, split *netw.Split) {
 }
 
 func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
+	if m.GameStatu == gs.DONE {
+		//TODO: check balance
+		m.resetGame()
+	}
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		client.Deal()
@@ -163,6 +179,18 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	if everyoneDealed {
 		m.GameStateEvent <- gs.PREPARING
 	}
+}
+
+func (m *SingleDeckGameRoom) resetGame() {
+	temp := make([]*netsp.SPPlayer, 0, 12)
+	for _, player := range m.GamePlayers {
+		if !player.IsSplit {
+			player.Reset()
+			temp = append(temp, player)
+		}
+	}
+	m.GamePlayers = temp
+	m.GameStateEvent <- gs.INIT
 }
 
 func (m *SingleDeckGameRoom) prepare() {
@@ -361,6 +389,23 @@ func (m *SingleDeckGameRoom) next_play() {
 	if m.CurrentPlayerCursor > -1 {
 		m.send_turn_play_message_current_player()
 	} else {
+		go func() {
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.Event{
+					InternalId: m.System.InternalId,
+					Code:       "show_second_card",
+				},
+				MessageCode: netw.EEvent,
+			}
+		}()
+		time.Sleep(time.Second * 2)
+		for m.System.Point < STAND_ON_SOFT_POINT {
+			m.pull_card_for_system()
+			time.Sleep(time.Second * 1)
+		}
+		time.Sleep(time.Millisecond * 300)
+
 		//TODO: dealer must standon soft 17
 		//m.pull_card_for_system()
 		m.GameStateEvent <- gs.DONE
@@ -419,6 +464,7 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 	}
 }
 func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
+	m.GameStatu = state
 	switch state {
 	case gs.INIT:
 		m.init()
@@ -445,24 +491,44 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 	sort.Slice(m.GamePlayers, func(i, j int) bool {
 		return m.GamePlayers[i].Point > m.GamePlayers[j].Point && m.GamePlayers[i].Point <= 21
 	})
-	var winnerFlag bool = false
-	for _, p := range m.GamePlayers {
-		if p.Point == 21 {
-			p.GameResult = gr.WIN
-			winnerFlag = true
-		} else if p.Point < 21 && !winnerFlag {
-			p.GameResult = gr.WIN
-			winnerFlag = true
-		} else {
-			p.GameResult = gr.LOSE
-		}
-	}
+	// var winnerFlag bool = false
 
 	for _, p := range m.GamePlayers {
-		if p.GameResult == gr.WIN {
-			fmt.Printf("Winner %s\n", p.InternalId)
+		if m.System.Point > 21 {
+			if p.Point < 21 {
+				p.GameResult = gr.WIN
+			} else {
+				p.GameResult = gr.LOSE
+			}
+		} else if m.System.Point == 21 {
+			if p.Point == 21 {
+				p.GameResult = gr.PUSH
+			} else {
+				p.GameResult = gr.LOSE
+			}
 		} else {
+			// equals m.System.Point < 21
+			if p.Point > 21 {
+				p.GameResult = gr.LOSE
+			} else if p.Point == 21 || p.Point > m.System.Point {
+				p.GameResult = gr.WIN
+			} else if p.Point == m.System.Point {
+				p.GameResult = gr.PUSH
+			}
+		}
+	}
+	for _, p := range m.GamePlayers {
+		switch p.GameResult {
+		case gr.WIN:
+			fmt.Printf("Winner %s\n", p.InternalId)
+		case gr.LOSE:
 			fmt.Printf("Loser %s\n", p.InternalId)
+		case gr.PUSH:
+			fmt.Printf("Push %s\n", p.InternalId)
+		case gr.BLACKJACK:
+			fmt.Printf("Blackjack %s\n", p.InternalId)
+		default:
+
 		}
 	}
 }

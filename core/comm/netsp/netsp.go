@@ -49,6 +49,10 @@ func (c *NetSPClient) AddMoney(internalId string, amount float32) {
 	}
 }
 
+func (c *SPPlayer) Reset() {
+	c.Cards = make([]*mdl.Card, 0, 10)
+}
+
 func (c *NetSPClient) SetInsurance(internalId string, insurance bool) {
 	p, ok := c.Players[internalId]
 	if ok {
@@ -117,8 +121,15 @@ func (c *SPPlayer) isOver21Limit() bool {
 	} else if c.Point2 > 21 {
 		c.Point = c.Point
 	}
+	if c.Point2 <= 21 && c.Point2 > c.Point {
+		c.Point = c.Point2
+	}
 	if c.Point == 21 || c.Point2 == 21 {
-		c.GameResult = gr.BLACKJACK
+		if len(c.Cards) == 2 {
+			c.GameResult = gr.BLACKJACK
+		} else {
+			c.GameResult = gr.WIN
+		}
 	}
 	if c.Point > 21 {
 		return true

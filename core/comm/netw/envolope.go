@@ -43,6 +43,7 @@ type AddMoney struct {
 type Deal struct {
 	Id         string `json:"id"`
 	InternalId string `json:"internal_id"`
+	Code       string `json:"code"`
 }
 
 type Stand struct {
