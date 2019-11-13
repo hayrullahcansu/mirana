@@ -130,7 +130,7 @@ func (m *SPGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 func (m *SPGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
-		client.AddMoney(addMoney.InternalId, addMoney.Amount)
+		client.PlaceBet(addMoney.InternalId, addMoney.Amount)
 		m.Broadcast <- &netw.Envelope{
 			Client: "client_id",
 			Message: &netw.AddMoney{

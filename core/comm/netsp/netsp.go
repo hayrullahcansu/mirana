@@ -12,8 +12,9 @@ import (
 
 type NetSPClient struct {
 	*netw.BaseClient
-	Players map[string]*SPPlayer
-	IsDeal  bool
+	Players        map[string]*SPPlayer
+	IsDeal         bool
+	SessionBalance float32
 }
 
 func NewClient(userId string) *NetSPClient {
@@ -28,44 +29,55 @@ func NewClient(userId string) *NetSPClient {
 }
 
 type SPPlayer struct {
-	Amount      float32
-	InternalId  string
-	Cards       []*mdl.Card
-	IsSystem    bool
-	Point       int
-	Point2      int
-	IsSplit     bool
-	IsInsurance bool
-	CanSplit    bool
-	GameResult  gr.GameResult
+	Amount          float32
+	InsuranceAmount float32
+	InternalId      string
+	Cards           []*mdl.Card
+	IsSystem        bool
+	Point           int
+	Point2          int
+	IsSplit         bool
+	IsInsurance     bool
+	CanSplit        bool
+	GameResult      gr.GameResult
 }
 
-func (c *NetSPClient) AddMoney(internalId string, amount float32) bool {
+func (c *NetSPClient) PlaceBet(internalId string, amount float32) bool {
+	return c.placeBet(internalId, amount, false)
+}
+
+func (c *NetSPClient) PlaceInsuranceBet(internalId string) bool {
+	return c.placeBet(internalId, 0, true)
+}
+
+func (c *NetSPClient) placeBet(internalId string, amount float32, isInsurance bool) bool {
 	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, amount); !greader {
 		//not enough money
 		return greader
 	}
 	p, ok := c.Players[internalId]
-	if ok {
-		p.addMoney(amount)
-	} else {
+	if !ok {
 		p = NewSPPlayer(internalId)
-		p.addMoney(amount)
 		c.Players[internalId] = p
 	}
-	api.Manager().AddAmount(c.UserId, -1*amount)
+	if isInsurance {
+		p.IsInsurance = true
+		amount = p.Amount / 2
+	}
+	p.placeBet(amount, isInsurance)
+	cost := -1 * amount
+	api.Manager().AddAmount(c.UserId, cost)
+	c.SessionBalance += (cost)
 	return true
+}
+
+func (c *NetSPClient) AddMoney(amount float32) {
+	api.Manager().AddAmount(c.UserId, amount)
+	c.SessionBalance += (amount)
 }
 
 func (c *SPPlayer) Reset() {
 	c.Cards = make([]*mdl.Card, 0, 10)
-}
-
-func (c *NetSPClient) SetInsurance(internalId string, insurance bool) {
-	p, ok := c.Players[internalId]
-	if ok {
-		p.IsInsurance = insurance
-	}
 }
 
 func (c *NetSPClient) Deal() {
@@ -99,8 +111,12 @@ func NewSPSystemPlayer() *SPPlayer {
 	}
 }
 
-func (c *SPPlayer) addMoney(amount float32) {
-	c.Amount += amount
+func (c *SPPlayer) placeBet(amount float32, isInsurance bool) {
+	if isInsurance {
+		c.InsuranceAmount += amount
+	} else {
+		c.Amount += amount
+	}
 }
 
 func (c *SPPlayer) RemoveCard(index int) *mdl.Card {
@@ -124,14 +140,12 @@ func (c *SPPlayer) GetCardStringCommaDelemited() string {
 }
 
 func (c *SPPlayer) isOver21Limit() bool {
-	if c.Point > 21 && c.Point2 > 0 {
-		c.Point = c.Point2
-	} else if c.Point2 > 21 {
-		c.Point = c.Point
-	}
-	if c.Point2 <= 21 && c.Point2 > c.Point {
+	if c.Point2 > 0 && c.Point2 <= 21 {
 		c.Point = c.Point2
 	}
+	// if c.Point2 <= 21 && c.Point2 > c.Point {
+	// 	c.Point = c.Point2
+	// }
 	if c.Point == 21 || c.Point2 == 21 {
 		if len(c.Cards) == 2 {
 			c.GameResult = gr.BLACKJACK
@@ -161,6 +175,13 @@ func (c *SPPlayer) HasAceFirstCard() bool {
 	return false
 }
 
+func (c *SPPlayer) IsInsuranceWorked() bool {
+	if c.IsSystem && len(c.Cards) == 2 && c.Cards[0].CardValue == mdl.CV_1 && c.Point == 21 {
+		return true
+	}
+	return false
+}
+
 func (c *SPPlayer) setCanSplit() {
 	if len(c.Cards) == 2 {
 		fmt.Printf(".")
@@ -175,14 +196,16 @@ func (c *SPPlayer) calculateScore() {
 	s1 := 0
 	s2 := 0
 	var asExists = false
+	var asUsed = false
 	for _, card := range c.Cards {
-		if card.CardValue == mdl.CV_1 {
+		if card.CardValue == mdl.CV_1 && !asExists {
 			asExists = true
 		}
 		val := card.CardValue.Value()
 		s1 += val
-		if asExists {
+		if asExists && !asUsed {
 			s2 += 10
+			asUsed = true
 		}
 	}
 	if asExists {

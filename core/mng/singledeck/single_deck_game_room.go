@@ -174,7 +174,7 @@ func (m *SingleDeckGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) 
 	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
-		if client.AddMoney(addMoney.InternalId, addMoney.Amount) {
+		if client.PlaceBet(addMoney.InternalId, addMoney.Amount) {
 			m.Update <- &netw.Update{
 				Type: "account",
 				Code: client.UserId,
@@ -366,11 +366,14 @@ func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		if event.Code == "insurance" {
-			insurance := false
 			if event.Message == "true" {
-				insurance = true
+				if client.PlaceInsuranceBet(event.InternalId) {
+					m.Update <- &netw.Update{
+						Type: "account",
+						Code: m.PlayerConnection.UserId,
+					}
+				}
 			}
-			client.SetInsurance(event.InternalId, insurance)
 			// m.Broadcast <- &netw.Envelope{
 			// 	Client: "client_id",
 			// 	Message: &netw.AddMoney{
@@ -478,6 +481,12 @@ func (m *SingleDeckGameRoom) send_turn_play_message_current_player() {
 
 func (m *SingleDeckGameRoom) pull_card_for_system() {
 	card := m.PopCard()
+	//TODO: remove it, because i added for test insurance
+	// if len(m.System.Cards) == 0 {
+	// 	card.CardValue = mdl.CV_1
+	// } else if len(m.System.Cards) == 1 {
+	// 	card.CardValue = mdl.CV_JACK
+	// }
 	m.System.HitCard(card)
 	m.Broadcast <- &netw.Envelope{
 		Client: "client_id",
@@ -511,7 +520,6 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 			},
 			MessageCode: netw.EEvent,
 		}
-		fmt.Printf("Loser %s\n", player.InternalId)
 		m.skip_next_player()
 	}
 }
@@ -544,7 +552,7 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 		return m.GamePlayers[i].Point > m.GamePlayers[j].Point && m.GamePlayers[i].Point <= 21
 	})
 	// var winnerFlag bool = false
-
+	fmt.Printf("element size:%d\n", len(m.GamePlayers))
 	for _, p := range m.GamePlayers {
 		if m.System.Point > 21 {
 			if p.Point < 21 {
@@ -566,21 +574,34 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 				p.GameResult = gr.WIN
 			} else if p.Point == m.System.Point {
 				p.GameResult = gr.PUSH
+			} else {
+				p.GameResult = gr.LOSE
 			}
 		}
 	}
 	for _, p := range m.GamePlayers {
+		if p.IsInsurance && m.System.IsInsuranceWorked() {
+			fmt.Printf("Insurance %s\n", p.InternalId)
+			m.PlayerConnection.AddMoney(p.Amount)
+		}
 		switch p.GameResult {
 		case gr.WIN:
+			m.PlayerConnection.AddMoney(p.Amount * 2)
 			fmt.Printf("Winner %s\n", p.InternalId)
 		case gr.LOSE:
 			fmt.Printf("Loser %s\n", p.InternalId)
 		case gr.PUSH:
+			m.PlayerConnection.AddMoney(p.Amount)
 			fmt.Printf("Push %s\n", p.InternalId)
 		case gr.BLACKJACK:
+			m.PlayerConnection.AddMoney(p.Amount * 5 / 2)
 			fmt.Printf("Blackjack %s\n", p.InternalId)
 		default:
-
+			fmt.Printf("Default %s\n", p.InternalId)
 		}
+	}
+	m.Update <- &netw.Update{
+		Type: "account",
+		Code: m.PlayerConnection.UserId,
 	}
 }
