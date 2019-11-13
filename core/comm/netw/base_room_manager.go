@@ -2,6 +2,7 @@ package netw
 
 import (
 	"fmt"
+	"sync"
 )
 
 type BaseRoomManager struct {
@@ -10,6 +11,7 @@ type BaseRoomManager struct {
 	Unregister chan interface{}
 	Notify     chan *Notify
 	Broadcast  chan *Envelope
+	L          *sync.Mutex
 }
 
 type IBaseRoomManager interface {
@@ -23,6 +25,7 @@ func NewBaseRoomManager() *BaseRoomManager {
 		Unregister: make(chan interface{}, 1),
 		Notify:     make(chan *Notify, 1),
 		Broadcast:  make(chan *Envelope, 10),
+		L:          &sync.Mutex{},
 	}
 }
 

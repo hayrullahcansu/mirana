@@ -303,7 +303,6 @@ func (m *SPGameRoom) next_play() {
 	if m.CurrentPlayerCursor > -1 {
 		m.send_turn_play_message_current_player()
 	} else {
-		//TODO: if system need to pull card implement
 		//m.pull_card_for_system()
 		m.GameStateEvent <- gs.DONE
 	}

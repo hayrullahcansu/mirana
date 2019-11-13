@@ -34,9 +34,4 @@ func (manager *SingleDeckGameRoomManager) RequestPlayGame(c *netsp.NetSPClient) 
 	g := NewSingleDeckGameRoom()
 	manager.GameRooms[g] = true
 	g.ConnectGame(c)
-	// manager.DefaultRoom.ConnectGame(c)
-
-	// m.Players[c] = true
-	// c.Notify = m.Notify
-	// m.Register <- c
 }

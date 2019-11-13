@@ -108,7 +108,6 @@ func AppCleanup() {
 
 // 	if x := recover(); x != nil {
 // 		log.Printf("run time panic: %v", x)
-// 		//TODO: save the state and initlaize again.
 // 		service.RunHandlers()
 // 	}
 // }

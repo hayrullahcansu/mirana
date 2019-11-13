@@ -121,6 +121,8 @@ func (m *SingleDeckGameRoom) OnConnect(c interface{}) {
 	}
 }
 func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		//TODO: check player able to play?
@@ -137,6 +139,8 @@ func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) 
 }
 
 func (m *SingleDeckGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		client.AddMoney(addMoney.InternalId, addMoney.Amount)
@@ -152,6 +156,8 @@ func (m *SingleDeckGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) 
 }
 
 func (m *SingleDeckGameRoom) OnSplit(c interface{}, split *netw.Split) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		m.split_player(client, split.InternalId)
@@ -159,29 +165,33 @@ func (m *SingleDeckGameRoom) OnSplit(c interface{}, split *netw.Split) {
 }
 
 func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
+	m.L.Lock()
+	client, ok := c.(*netsp.NetSPClient)
+	//TODO: check balance and other controls
 	if m.GameStatu == gs.DONE {
-		//TODO: check balance
 		m.resetGame()
 	}
-	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		client.Deal()
 		m.Broadcast <- &netw.Envelope{
 			Client: "client_id",
 			Message: &netw.Deal{
 				InternalId: deal.InternalId,
+				Code:       "dealed",
 			},
 			MessageCode: netw.EDeal,
 		}
 	}
 	everyoneDealed := true
 	everyoneDealed = m.PlayerConnection.IsDeal
+	m.L.Unlock()
 	if everyoneDealed {
 		m.GameStateEvent <- gs.PREPARING
 	}
 }
 
 func (m *SingleDeckGameRoom) resetGame() {
+	m.L.Lock()
 	temp := make([]*netsp.SPPlayer, 0, 12)
 	for _, player := range m.GamePlayers {
 		if !player.IsSplit {
@@ -190,10 +200,12 @@ func (m *SingleDeckGameRoom) resetGame() {
 		}
 	}
 	m.GamePlayers = temp
+	m.L.Unlock()
 	m.GameStateEvent <- gs.INIT
 }
 
 func (m *SingleDeckGameRoom) prepare() {
+	m.L.Lock()
 	m.System = netsp.NewSPSystemPlayer()
 	m.Broadcast <- &netw.Envelope{
 		Client: "server",
@@ -245,7 +257,7 @@ func (m *SingleDeckGameRoom) prepare() {
 	}
 	//split asking if check
 	m.split_asking_if_check()
-
+	m.L.Unlock()
 	m.GameStateEvent <- gs.IN_PLAY
 }
 
@@ -283,35 +295,36 @@ func (m *SingleDeckGameRoom) split_player(client *netsp.NetSPClient, internalId 
 			secondCard := player.RemoveCard(1)
 			splitedPlayer = netsp.NewSplitedSPPlayer(player)
 			splitedPlayer.HitCard(secondCard)
+			player.IsSplit = true
+			card := m.PopCard()
+			player.HitCard(card)
+			card = m.PopCard()
+			splitedPlayer.HitCard(card)
+			m.GamePlayers = append(m.GamePlayers, splitedPlayer)
+			m.CurrentPlayerCursor++
+			copy(m.GamePlayers[m.CurrentPlayerCursor:], m.GamePlayers[m.CurrentPlayerCursor-1:])
+			m.GamePlayers[m.CurrentPlayerCursor-1] = splitedPlayer
+			RefCards := player.GetCardStringCommaDelemited()
+			SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.Split{
+					InternalId:         splitedPlayer.InternalId,
+					Amount:             splitedPlayer.Amount,
+					Ref:                player.InternalId,
+					RefCards:           RefCards,
+					SplitedPlayerCards: SplitedPlayerCards,
+				},
+				MessageCode: netw.ESplit,
+			}
+			time.Sleep(time.Millisecond * 300)
 		}
 	}
-	player.IsSplit = true
-	card := m.PopCard()
-	player.HitCard(card)
-	card = m.PopCard()
-	splitedPlayer.HitCard(card)
-	m.GamePlayers = append(m.GamePlayers, splitedPlayer)
-	m.CurrentPlayerCursor++
-	copy(m.GamePlayers[m.CurrentPlayerCursor:], m.GamePlayers[m.CurrentPlayerCursor-1:])
-	m.GamePlayers[m.CurrentPlayerCursor-1] = splitedPlayer
-	RefCards := player.GetCardStringCommaDelemited()
-	SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
-	m.Broadcast <- &netw.Envelope{
-		Client: "client_id",
-		Message: &netw.Split{
-			InternalId:         splitedPlayer.InternalId,
-			Amount:             splitedPlayer.Amount,
-			Ref:                player.InternalId,
-			RefCards:           RefCards,
-			SplitedPlayerCards: SplitedPlayerCards,
-		},
-		MessageCode: netw.ESplit,
-	}
-	time.Sleep(time.Millisecond * 300)
-
 }
 
 func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
 		if event.Code == "insurance" {
@@ -333,6 +346,8 @@ func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
 }
 
 func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	_, ok := c.(*netsp.NetSPClient)
 	if ok {
 		for _, player := range m.GamePlayers {
@@ -344,6 +359,8 @@ func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 }
 
 func (m *SingleDeckGameRoom) OnStand(c interface{}, stand *netw.Stand) {
+	m.L.Lock()
+	defer m.L.Unlock()
 	_, ok := c.(*netsp.NetSPClient)
 	if ok {
 		for _, player := range m.GamePlayers {
@@ -405,9 +422,6 @@ func (m *SingleDeckGameRoom) next_play() {
 			time.Sleep(time.Second * 1)
 		}
 		time.Sleep(time.Millisecond * 300)
-
-		//TODO: dealer must standon soft 17
-		//m.pull_card_for_system()
 		m.GameStateEvent <- gs.DONE
 	}
 }
@@ -459,7 +473,7 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *netsp.SPPlayer) {
 			},
 			MessageCode: netw.EEvent,
 		}
-		fmt.Println("lose" + player.InternalId)
+		fmt.Printf("Loser %s\n", player.InternalId)
 		m.skip_next_player()
 	}
 }

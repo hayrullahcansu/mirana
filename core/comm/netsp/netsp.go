@@ -15,13 +15,14 @@ type NetSPClient struct {
 	IsDeal  bool
 }
 
-func NewClient() *NetSPClient {
+func NewClient(userId string) *NetSPClient {
 
 	client := &NetSPClient{
 		Players: make(map[string]*SPPlayer),
 	}
 	base := netw.NewBaseClient(client)
 	client.BaseClient = base
+	client.UserId = userId
 	return client
 }
 
