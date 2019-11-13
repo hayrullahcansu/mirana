@@ -9,6 +9,7 @@ type BaseRoomManager struct {
 	EnvelopeListener
 	Register   chan interface{}
 	Unregister chan interface{}
+	Update     chan *Update
 	Notify     chan *Notify
 	Broadcast  chan *Envelope
 	L          *sync.Mutex
@@ -23,6 +24,7 @@ func NewBaseRoomManager() *BaseRoomManager {
 	return &BaseRoomManager{
 		Register:   make(chan interface{}, 1),
 		Unregister: make(chan interface{}, 1),
+		Update:     make(chan *Update, 10),
 		Notify:     make(chan *Notify, 1),
 		Broadcast:  make(chan *Envelope, 10),
 		L:          &sync.Mutex{},
@@ -38,6 +40,9 @@ func (s *BaseRoomManager) ListenEvents() {
 			s.OnDisconnect(player)
 		case b := <-s.Broadcast:
 			println(b)
+			break
+		case b := <-s.Update:
+			println(b.Type)
 			break
 		case notify := <-s.Notify:
 			s.OnNotify(notify)

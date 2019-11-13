@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"bitbucket.org/digitdreamteam/mirana/core/api"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
@@ -60,6 +61,10 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 					s.PlayerConnection.Send <- e
 				}
 			}()
+		case u := <-s.Update:
+			go func() {
+				s.DoUpdate(u)
+			}()
 		case notify := <-s.Notify:
 			go func() {
 				s.OnNotify(notify)
@@ -70,6 +75,29 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 				s.gameStateChanged(gameStateEvent)
 			}()
 		}
+	}
+}
+
+func (s *SingleDeckGameRoom) DoUpdate(update *netw.Update) {
+	switch update.Type {
+	case "account":
+		if s.PlayerConnection.UserId == update.Code {
+			u := api.Manager().GetUser(s.PlayerConnection.UserId)
+			s.PlayerConnection.Send <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.User{
+					UserId:    u.UserId,
+					Balance:   u.Balance,
+					Name:      u.Name,
+					Win:       u.Win,
+					Lose:      u.Lose,
+					Push:      u.Push,
+					Blackjack: u.Blackjack,
+				},
+				MessageCode: netw.EUser,
+			}
+		}
+		break
 	}
 }
 
@@ -115,9 +143,12 @@ func (m *SingleDeckGameRoom) ConnectGame(c *netsp.NetSPClient) {
 }
 
 func (m *SingleDeckGameRoom) OnConnect(c interface{}) {
-	_, ok := c.(*netsp.NetSPClient)
+	client, ok := c.(*netsp.NetSPClient)
 	if ok {
-
+		m.Update <- &netw.Update{
+			Type: "account",
+			Code: client.UserId,
+		}
 	}
 }
 func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
@@ -143,14 +174,21 @@ func (m *SingleDeckGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) 
 	defer m.L.Unlock()
 	client, ok := c.(*netsp.NetSPClient)
 	if ok {
-		client.AddMoney(addMoney.InternalId, addMoney.Amount)
-		m.Broadcast <- &netw.Envelope{
-			Client: "client_id",
-			Message: &netw.AddMoney{
-				InternalId: addMoney.InternalId,
-				Amount:     addMoney.Amount,
-			},
-			MessageCode: netw.EAddMoney,
+		if client.AddMoney(addMoney.InternalId, addMoney.Amount) {
+			m.Update <- &netw.Update{
+				Type: "account",
+				Code: client.UserId,
+			}
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.AddMoney{
+					InternalId: addMoney.InternalId,
+					Amount:     addMoney.Amount,
+				},
+				MessageCode: netw.EAddMoney,
+			}
+		} else {
+			//TODO: send not enough balance
 		}
 	}
 }

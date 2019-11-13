@@ -68,6 +68,17 @@ type PlayGame struct {
 	Mode string `json:"mode"`
 }
 
+type User struct {
+	UserId     string  `json:"user_id"`
+	Name       string  `json:"name"`
+	Balance    float32 `json:"balance"`
+	WinBalance float32 `json:"win_balance"`
+	Win        int     `json:"win"`
+	Lose       int     `json:"lose"`
+	Push       int     `json:"push"`
+	Blackjack  int     `json:"blackjack"`
+}
+
 // MessageCode is enumarete all message types
 type MessageCode int
 
@@ -82,6 +93,7 @@ const (
 	EDouble               // 6
 	EPlayGame             // 7
 	ESplit                // 8
+	EUser                 // 9
 )
 
 var MessageCodes = []MessageCode{
@@ -94,4 +106,5 @@ var MessageCodes = []MessageCode{
 	EDouble,
 	EPlayGame,
 	ESplit,
+	EUser,
 }

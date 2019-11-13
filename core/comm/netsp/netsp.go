@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"bitbucket.org/digitdreamteam/mirana/core/api"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
 	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
@@ -39,7 +40,11 @@ type SPPlayer struct {
 	GameResult  gr.GameResult
 }
 
-func (c *NetSPClient) AddMoney(internalId string, amount float32) {
+func (c *NetSPClient) AddMoney(internalId string, amount float32) bool {
+	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, amount); !greader {
+		//not enough money
+		return greader
+	}
 	p, ok := c.Players[internalId]
 	if ok {
 		p.addMoney(amount)
@@ -48,6 +53,8 @@ func (c *NetSPClient) AddMoney(internalId string, amount float32) {
 		p.addMoney(amount)
 		c.Players[internalId] = p
 	}
+	api.Manager().AddAmount(c.UserId, -1*amount)
+	return true
 }
 
 func (c *SPPlayer) Reset() {

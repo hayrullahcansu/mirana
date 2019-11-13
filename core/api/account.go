@@ -33,7 +33,9 @@ func (m *AccountManager) GetUser(id string) *mdl.User {
 	if u, ok := m.Users[id]; ok {
 		return u
 	}
-	return nil
+	u := mdl.NewUser(id, "kuzey")
+	m.Users[id] = u
+	return u
 }
 
 func (m *AccountManager) AddAmount(id string, amount float32) {

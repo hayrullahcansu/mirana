@@ -42,9 +42,9 @@ type IBaseClient interface {
 // Client is a middleman between the websocket Connection and the hub.
 type BaseClient struct {
 	IBaseClient
-	UserId     string
 	Conn       *websocket.Conn
 	Send       chan *Envelope
+	UserId     string
 	SentBy     interface{}
 	Notify     chan *Notify
 	Unregister chan interface{}
