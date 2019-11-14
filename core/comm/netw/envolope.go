@@ -44,6 +44,7 @@ type Deal struct {
 	Id         string `json:"id"`
 	InternalId string `json:"internal_id"`
 	Code       string `json:"code"`
+	Payload    string `json:"payload"`
 }
 
 type Stand struct {

@@ -1,7 +1,9 @@
 package singledeck
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"sort"
 	"time"
@@ -86,13 +88,14 @@ func (s *SingleDeckGameRoom) DoUpdate(update *netw.Update) {
 			s.PlayerConnection.Send <- &netw.Envelope{
 				Client: "client_id",
 				Message: &netw.User{
-					UserId:    u.UserId,
-					Balance:   u.Balance,
-					Name:      u.Name,
-					Win:       u.Win,
-					Lose:      u.Lose,
-					Push:      u.Push,
-					Blackjack: u.Blackjack,
+					UserId:     u.UserId,
+					Balance:    u.Balance,
+					Name:       u.Name,
+					Win:        u.Win,
+					Lose:       u.Lose,
+					Push:       u.Push,
+					Blackjack:  u.Blackjack,
+					WinBalance: s.PlayerConnection.SessionBalance,
 				},
 				MessageCode: netw.EUser,
 			}
@@ -206,10 +209,36 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	m.L.Lock()
 	client, ok := c.(*netsp.NetSPClient)
 	//TODO: check balance and other controls
-	if m.GameStatu == gs.DONE {
-		m.resetGame()
-	}
 	if ok {
+		if deal.Code == "deal_new_game" && m.GameStatu == gs.DONE {
+			m.resetGame(true)
+			var settings mdl.GameSettings
+			bytes := []byte(deal.Payload)
+			if err := json.Unmarshal(bytes, &settings); err != nil {
+				log.Fatal(err)
+			}
+			client.Players = make(map[string]*netsp.SPPlayer)
+			if len(settings.Bets) > 0 {
+				for _, bet := range settings.Bets {
+					if bet.InternalId != "" && bet.Amount > 0 {
+						if client.PlaceBet(bet.InternalId, bet.Amount) {
+							m.Update <- &netw.Update{
+								Type: "account",
+								Code: client.UserId,
+							}
+							m.Broadcast <- &netw.Envelope{
+								Client: "client_id",
+								Message: &netw.AddMoney{
+									InternalId: bet.InternalId,
+									Amount:     bet.Amount,
+								},
+								MessageCode: netw.EAddMoney,
+							}
+						}
+					}
+				}
+			}
+		}
 		client.Deal()
 		m.Broadcast <- &netw.Envelope{
 			Client: "client_id",
@@ -228,18 +257,17 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	}
 }
 
-func (m *SingleDeckGameRoom) resetGame() {
-	m.L.Lock()
+func (m *SingleDeckGameRoom) resetGame(justClear bool) {
 	temp := make([]*netsp.SPPlayer, 0, 12)
-	for _, player := range m.GamePlayers {
-		if !player.IsSplit {
-			player.Reset()
-			temp = append(temp, player)
+	if !justClear {
+		for _, player := range m.GamePlayers {
+			if !player.IsSplit {
+				player.Reset()
+				temp = append(temp, player)
+			}
 		}
 	}
 	m.GamePlayers = temp
-	m.L.Unlock()
-	m.GameStateEvent <- gs.INIT
 }
 
 func (m *SingleDeckGameRoom) prepare() {
@@ -329,7 +357,7 @@ func (m *SingleDeckGameRoom) split_player(client *netsp.NetSPClient, internalId 
 	player, ok := client.Players[internalId]
 	var splitedPlayer *netsp.SPPlayer
 	if ok {
-		if player.CanSplit {
+		if player.CanSplit && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
 			secondCard := player.RemoveCard(1)
 			splitedPlayer = netsp.NewSplitedSPPlayer(player)
 			splitedPlayer.HitCard(secondCard)
@@ -344,17 +372,26 @@ func (m *SingleDeckGameRoom) split_player(client *netsp.NetSPClient, internalId 
 			m.GamePlayers[m.CurrentPlayerCursor-1] = splitedPlayer
 			RefCards := player.GetCardStringCommaDelemited()
 			SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
-			m.Broadcast <- &netw.Envelope{
-				Client: "client_id",
-				Message: &netw.Split{
-					InternalId:         splitedPlayer.InternalId,
-					Amount:             splitedPlayer.Amount,
-					Ref:                player.InternalId,
-					RefCards:           RefCards,
-					SplitedPlayerCards: SplitedPlayerCards,
-				},
-				MessageCode: netw.ESplit,
+			if client.PlaceBet(splitedPlayer.InternalId, player.Amount) {
+				m.Update <- &netw.Update{
+					Type: "account",
+					Code: client.UserId,
+				}
+				m.Broadcast <- &netw.Envelope{
+					Client: "client_id",
+					Message: &netw.Split{
+						InternalId:         splitedPlayer.InternalId,
+						Amount:             splitedPlayer.Amount,
+						Ref:                player.InternalId,
+						RefCards:           RefCards,
+						SplitedPlayerCards: SplitedPlayerCards,
+					},
+					MessageCode: netw.ESplit,
+				}
+			} else {
+
 			}
+
 			time.Sleep(time.Millisecond * 300)
 		}
 	}
@@ -584,24 +621,47 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 			fmt.Printf("Insurance %s\n", p.InternalId)
 			m.PlayerConnection.AddMoney(p.Amount)
 		}
+		messsage := "player_lose"
+		id := p.InternalId
 		switch p.GameResult {
 		case gr.WIN:
 			m.PlayerConnection.AddMoney(p.Amount * 2)
 			fmt.Printf("Winner %s\n", p.InternalId)
+			messsage = "player_win"
 		case gr.LOSE:
 			fmt.Printf("Loser %s\n", p.InternalId)
+			messsage = "player_lose"
 		case gr.PUSH:
 			m.PlayerConnection.AddMoney(p.Amount)
 			fmt.Printf("Push %s\n", p.InternalId)
+			messsage = "player_push"
 		case gr.BLACKJACK:
 			m.PlayerConnection.AddMoney(p.Amount * 5 / 2)
 			fmt.Printf("Blackjack %s\n", p.InternalId)
+			messsage = "player_blackjack"
 		default:
 			fmt.Printf("Default %s\n", p.InternalId)
 		}
+		m.Broadcast <- &netw.Envelope{
+			Client: "client_id",
+			Message: &netw.Event{
+				InternalId: id,
+				Code:       messsage,
+			},
+			MessageCode: netw.EEvent,
+		}
+	}
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Event{
+			InternalId: "server",
+			Code:       "game_done",
+		},
+		MessageCode: netw.EEvent,
 	}
 	m.Update <- &netw.Update{
 		Type: "account",
 		Code: m.PlayerConnection.UserId,
 	}
+
 }
