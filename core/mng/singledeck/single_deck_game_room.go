@@ -231,6 +231,7 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 								Message: &netw.AddMoney{
 									InternalId: bet.InternalId,
 									Amount:     bet.Amount,
+									Op:         "set",
 								},
 								MessageCode: netw.EAddMoney,
 							}
