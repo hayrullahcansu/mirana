@@ -6,13 +6,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netl"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 )
 
 type LobbyManager struct {
 	*netw.BaseRoomManager
-	Players map[*netl.NetLobbyClient]bool
+	Players map[*NetLobbyClient]bool
 }
 
 var _instance *LobbyManager
@@ -27,7 +26,7 @@ func Manager() *LobbyManager {
 func initialManagerInstance() {
 	_instance = &LobbyManager{
 		BaseRoomManager: netw.NewBaseRoomManager(),
-		Players:         make(map[*netl.NetLobbyClient]bool),
+		Players:         make(map[*NetLobbyClient]bool),
 	}
 	go _instance.ListenEvents()
 }
@@ -82,20 +81,20 @@ func (s *LobbyManager) OnNotify(notify *netw.Notify) {
 	}
 }
 
-func (m *LobbyManager) ConnectLobby(c *netl.NetLobbyClient) {
+func (m *LobbyManager) ConnectLobby(c *NetLobbyClient) {
 	m.Players[c] = true
 	c.Notify = m.Notify
 	m.Register <- c
 }
 
 func (m *LobbyManager) OnConnect(c interface{}) {
-	_, ok := c.(*netl.NetLobbyClient)
+	_, ok := c.(*NetLobbyClient)
 	if ok {
 
 	}
 }
 func (m *LobbyManager) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
-	client, ok := c.(*netl.NetLobbyClient)
+	client, ok := c.(*NetLobbyClient)
 	if ok {
 		//TODO: check player able to play?
 		mode := playGame.Mode

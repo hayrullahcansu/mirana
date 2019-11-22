@@ -3,14 +3,13 @@ package routes
 import (
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netl"
 	"bitbucket.org/digitdreamteam/mirana/core/mng/lobby"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid
 func JoinLobbyHandler(w http.ResponseWriter, r *http.Request) {
 
-	c := netl.NewClient()
+	c := lobby.NewClient()
 	c.ServeWs(w, r)
 	lobby.Manager().ConnectLobby(c)
 	// t := netsp.NetSPClient{

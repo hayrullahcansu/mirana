@@ -2,8 +2,6 @@ package singledeck
 
 import (
 	"sync"
-
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netsp"
 )
 
 type SingleDeckGameRoomManager struct {
@@ -30,7 +28,7 @@ func initialGameManagerInstance() {
 	}
 }
 
-func (manager *SingleDeckGameRoomManager) RequestPlayGame(c *netsp.NetSPClient) {
+func (manager *SingleDeckGameRoomManager) RequestPlayGame(c *SingleDeckSPClient) {
 	g := NewSingleDeckGameRoom()
 	manager.GameRooms[g] = true
 	g.ConnectGame(c)

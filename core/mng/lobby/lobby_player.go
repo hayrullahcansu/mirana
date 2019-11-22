@@ -1,4 +1,4 @@
-package netl
+package lobby
 
 import (
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
