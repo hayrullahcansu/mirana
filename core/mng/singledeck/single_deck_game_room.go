@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	STAND_ON_SOFT_POINT = 17
+	STAND_ON_SOFT_POINT    = 17
+	DECK_NUMBER            = 1
+	CARD_COUNT_IN_ONE_DECK = 52
 )
 
 type SingleDeckGameRoom struct {
@@ -276,6 +278,10 @@ func (m *SingleDeckGameRoom) resetGame(justClear bool) {
 
 func (m *SingleDeckGameRoom) prepare() {
 	m.L.Lock()
+	if len(m.Pack.Values) < CARD_COUNT_IN_ONE_DECK*DECK_NUMBER/2 {
+		//generate new cards
+		m.init()
+	}
 	m.System = NewSPSystemPlayer()
 	m.Broadcast <- &netw.Envelope{
 		Client: "server",
@@ -526,6 +532,9 @@ func (m *SingleDeckGameRoom) pull_card_for_system() {
 
 func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) {
 	card := m.PopCard()
+	if card == nil {
+		fmt.Println(fmt.Sprintf("BUG OLUSTU CUNKU BITTI %d", len(m.Pack.Values)))
+	}
 	player.HitCard(card)
 	m.Broadcast <- &netw.Envelope{
 		Client: "client_id",

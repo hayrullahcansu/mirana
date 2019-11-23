@@ -197,7 +197,12 @@ func (c *SPPlayer) calculateScore() {
 	s2 := 0
 	var asExists = false
 	var asUsed = false
+	d := fmt.Sprintf("car number: %d", len(c.Cards))
 	for _, card := range c.Cards {
+		d += "counted;"
+		if card == nil {
+			fmt.Println("error-> " + d)
+		}
 		if card.CardValue == mdl.CV_1 && !asExists {
 			asExists = true
 		}
