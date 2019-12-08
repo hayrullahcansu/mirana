@@ -15,6 +15,7 @@ var loginHandlerRoute = flag.String("loginHandlerRoute", "/login", "login handle
 var registerHandlerRoute = flag.String("registerHandlerRoute", "/register", "login handler function route")
 var joinLobbyHandlerRoute = flag.String("joinLobbyHandlerRoute", "/joinlobby", "login handler function route")
 var joinRoomNormalGameHandlerRoute = flag.String("joinRoomMode1HandlerRoute", "/join_sp_game", "login handler function route")
+var joinRoomAmericanGameHandlerRoute = flag.String("joinRoomAmericanHandlerRoute", "/join_ap_game", "login handler function route")
 var joinRoomRankedGameHandlerRoute = flag.String("joinRoomMode2HandlerRoute", "/join_mp_game", "login handler function route")
 
 var appLiveVersion = flag.String("app_live_version", "1.0.0", "http spinner handler function path")
@@ -39,6 +40,9 @@ func RunHandlers() {
 	})
 	http.HandleFunc(*joinRoomNormalGameHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
 		routes.JoinRoomNormalGameHandler(w, r)
+	})
+	http.HandleFunc(*joinRoomAmericanGameHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
+		routes.JoinRoomAmericanGameHandler(w, r)
 	})
 	http.HandleFunc(*joinRoomRankedGameHandlerRoute, func(w http.ResponseWriter, r *http.Request) {
 		routes.JoinRoomRankedGameHandler(w, r)

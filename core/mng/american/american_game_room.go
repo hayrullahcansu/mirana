@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	STAND_ON_SOFT_POINT = 17
+	STAND_ON_SOFT_POINT    = 17
+	DECK_NUMBER            = 4
+	CARD_COUNT_IN_ONE_DECK = 52
 )
 
 type AmericanGameRoom struct {
@@ -276,6 +278,10 @@ func (m *AmericanGameRoom) resetGame(justClear bool) {
 
 func (m *AmericanGameRoom) prepare() {
 	m.L.Lock()
+	if len(m.Pack.Values) < CARD_COUNT_IN_ONE_DECK*DECK_NUMBER/2 {
+		//generate new cards
+		m.init()
+	}
 	m.System = NewSPSystemPlayer()
 	m.Broadcast <- &netw.Envelope{
 		Client: "server",
