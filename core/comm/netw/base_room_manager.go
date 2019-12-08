@@ -18,6 +18,7 @@ type BaseRoomManager struct {
 type IBaseRoomManager interface {
 	OnConnect(baseClient *BaseClient)
 	OnDisconnect(baseClient *BaseClient)
+	PurgeRoom()
 }
 
 func NewBaseRoomManager() *BaseRoomManager {
@@ -57,6 +58,13 @@ func (m *BaseRoomManager) OnConnect(c interface{}) {
 }
 
 func (m *BaseRoomManager) OnDisconnect(c interface{}) {
+	// _, ok := c.(*AmericanSPClient)
+	// if ok {
+	fmt.Println("OnDisconnectBase")
+	// }
+}
+
+func (m *BaseRoomManager) PurgeRoom() {
 
 }
 

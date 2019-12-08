@@ -33,3 +33,10 @@ func (manager *SingleDeckGameRoomManager) RequestPlayGame(c *SingleDeckSPClient)
 	manager.GameRooms[g] = true
 	g.ConnectGame(c)
 }
+
+func (manager *SingleDeckGameRoomManager) RemoveGameRoom(r *SingleDeckGameRoom) {
+	_, ok := manager.GameRooms[r]
+	if ok {
+		delete(manager.GameRooms, r)
+	}
+}

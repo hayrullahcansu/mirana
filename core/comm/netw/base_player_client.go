@@ -52,10 +52,9 @@ type BaseClient struct {
 
 func NewBaseClient(extended interface{}) *BaseClient {
 	return &BaseClient{
-		Send:       make(chan *Envelope, 10),
-		Notify:     make(chan *Notify, 1),
-		Unregister: make(chan interface{}, 1),
-		SentBy:     extended,
+		Send:   make(chan *Envelope, 10),
+		Notify: make(chan *Notify, 1),
+		SentBy: extended,
 	}
 }
 
@@ -70,7 +69,10 @@ func (c *BaseClient) ReadPump() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in f", r)
 		}
-		c.Unregister <- c
+		fmt.Println("ReadPump defered")
+		if c.Unregister != nil {
+			c.Unregister <- c.SentBy
+		}
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)

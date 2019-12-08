@@ -153,12 +153,26 @@ func (m *AmericanGameRoom) ConnectGame(c *AmericanSPClient) {
 func (m *AmericanGameRoom) OnConnect(c interface{}) {
 	client, ok := c.(*AmericanSPClient)
 	if ok {
+		client.Unregister = m.Unregister
 		m.Update <- &netw.Update{
 			Type: "account",
 			Code: client.UserId,
 		}
 	}
 }
+func (m *AmericanGameRoom) OnDisconnect(c interface{}) {
+	_, ok := c.(*AmericanSPClient)
+	if ok {
+		fmt.Println("OnDisconnect")
+		m.GameStateEvent <- gs.PURGE
+	}
+}
+
+func (m *AmericanGameRoom) PurgeRoom() {
+	m.PlayerConnection = nil
+	Manager().RemoveGameRoom(m)
+}
+
 func (m *AmericanGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 	m.L.Lock()
 	defer m.L.Unlock()

@@ -20,6 +20,7 @@ const (
 	PRE_START
 	IN_PLAY
 	DONE
+	PURGE
 )
 
 type GameState struct {

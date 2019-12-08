@@ -153,12 +153,27 @@ func (m *SingleDeckGameRoom) ConnectGame(c *SingleDeckSPClient) {
 func (m *SingleDeckGameRoom) OnConnect(c interface{}) {
 	client, ok := c.(*SingleDeckSPClient)
 	if ok {
+		client.Unregister = m.Unregister
 		m.Update <- &netw.Update{
 			Type: "account",
 			Code: client.UserId,
 		}
 	}
 }
+
+func (m *SingleDeckGameRoom) OnDisconnect(c interface{}) {
+	_, ok := c.(*SingleDeckSPClient)
+	if ok {
+		fmt.Println("OnDisconnect")
+		m.GameStateEvent <- gs.PURGE
+	}
+}
+
+func (m *SingleDeckGameRoom) PurgeRoom() {
+	m.PlayerConnection = nil
+	Manager().RemoveGameRoom(m)
+}
+
 func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 	m.L.Lock()
 	defer m.L.Unlock()
@@ -571,6 +586,8 @@ func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
 		m.send_turn_play_message_current_player()
 	case gs.DONE:
 		m.checkWinLose()
+	case gs.PURGE:
+		m.PurgeRoom()
 	}
 }
 

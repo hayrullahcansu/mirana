@@ -88,9 +88,9 @@ func (m *LobbyManager) ConnectLobby(c *NetLobbyClient) {
 }
 
 func (m *LobbyManager) OnConnect(c interface{}) {
-	_, ok := c.(*NetLobbyClient)
+	client, ok := c.(*NetLobbyClient)
 	if ok {
-
+		client.Unregister = m.Unregister
 	}
 }
 func (m *LobbyManager) OnPlayGame(c interface{}, playGame *netw.PlayGame) {

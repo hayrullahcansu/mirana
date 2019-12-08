@@ -1,7 +1,11 @@
 package american
 
 import (
+	"fmt"
 	"sync"
+	"time"
+
+	"bitbucket.org/digitdreamteam/mirana/core/settings"
 )
 
 type AmericanGameRoomManager struct {
@@ -26,10 +30,41 @@ func initialGameManagerInstance() {
 		GameRooms:   make(map[*AmericanGameRoom]bool),
 		DefaultRoom: NewAmericanGameRoom(),
 	}
+	go func() {
+		_instance.work()
+	}()
+}
+
+func (manager *AmericanGameRoomManager) work() {
+	purgeTicker := time.NewTicker(settings.PURGE_PERIOD)
+	echoTicker := time.NewTicker(settings.ECHO_PERIOD)
+	defer func() {
+		purgeTicker.Stop()
+		echoTicker.Stop()
+	}()
+	for {
+		select {
+		case <-purgeTicker.C:
+		case <-echoTicker.C:
+			fmt.Println("eco ticker called")
+			for _, ok := range _instance.GameRooms {
+				if ok {
+					fmt.Println("room called")
+				}
+			}
+		}
+	}
 }
 
 func (manager *AmericanGameRoomManager) RequestPlayGame(c *AmericanSPClient) {
 	g := NewAmericanGameRoom()
 	manager.GameRooms[g] = true
 	g.ConnectGame(c)
+}
+
+func (manager *AmericanGameRoomManager) RemoveGameRoom(r *AmericanGameRoom) {
+	_, ok := manager.GameRooms[r]
+	if ok {
+		delete(manager.GameRooms, r)
+	}
 }

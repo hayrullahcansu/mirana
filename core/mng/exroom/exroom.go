@@ -68,8 +68,8 @@ func (m *ExroomManager) ConnectLobby(client *netw.BaseClient) {
 }
 
 func (m *ExroomManager) OnConnect(client interface{}) {
-	_, ok := client.(*netw.BaseClient)
+	player, ok := client.(*netw.BaseClient)
 	if ok {
-
+		player.Unregister = m.Unregister
 	}
 }
