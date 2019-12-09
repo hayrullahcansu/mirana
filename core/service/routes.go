@@ -9,7 +9,7 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/core/service/routes"
 )
 
-var addr = flag.String("addr", "127.0.0.1:3535", "http service address")
+var addr = flag.String("addr", "0.0.0.0:3535", "http service address")
 
 var loginHandlerRoute = flag.String("loginHandlerRoute", "/login", "login handler function route")
 var registerHandlerRoute = flag.String("registerHandlerRoute", "/register", "login handler function route")
