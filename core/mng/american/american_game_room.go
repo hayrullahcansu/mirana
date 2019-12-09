@@ -59,6 +59,10 @@ func (s *AmericanGameRoom) ListenEvents() {
 				if s.PlayerConnection != nil {
 					s.PlayerConnection.Send <- e
 				}
+			case e := <-s.BroadcastStop:
+				if e {
+					return
+				}
 			}
 		}
 	}()
@@ -81,6 +85,10 @@ func (s *AmericanGameRoom) ListenEvents() {
 			go func() {
 				s.gameStateChanged(gameStateEvent)
 			}()
+		case e := <-s.ListenEventsStop:
+			if e {
+				return
+			}
 		}
 	}
 }
@@ -169,7 +177,10 @@ func (m *AmericanGameRoom) OnDisconnect(c interface{}) {
 }
 
 func (m *AmericanGameRoom) PurgeRoom() {
+	m.BroadcastStop <- true
+	m.ListenEventsStop <- true
 	m.PlayerConnection = nil
+
 	Manager().RemoveGameRoom(m)
 }
 
@@ -582,6 +593,8 @@ func (m *AmericanGameRoom) gameStateChanged(state gs.GameStatu) {
 		m.send_turn_play_message_current_player()
 	case gs.DONE:
 		m.checkWinLose()
+	case gs.PURGE:
+		m.PurgeRoom()
 	}
 }
 

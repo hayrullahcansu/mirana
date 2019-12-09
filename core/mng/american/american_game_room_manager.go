@@ -45,8 +45,12 @@ func (manager *AmericanGameRoomManager) work() {
 	for {
 		select {
 		case <-purgeTicker.C:
+			for _, ok := range _instance.GameRooms {
+				if ok {
+
+				}
+			}
 		case <-echoTicker.C:
-			fmt.Println("eco ticker called")
 			for _, ok := range _instance.GameRooms {
 				if ok {
 					fmt.Println("room called")

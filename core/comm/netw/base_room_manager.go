@@ -7,12 +7,14 @@ import (
 
 type BaseRoomManager struct {
 	EnvelopeListener
-	Register   chan interface{}
-	Unregister chan interface{}
-	Update     chan *Update
-	Notify     chan *Notify
-	Broadcast  chan *Envelope
-	L          *sync.Mutex
+	Register         chan interface{}
+	Unregister       chan interface{}
+	Update           chan *Update
+	Notify           chan *Notify
+	Broadcast        chan *Envelope
+	BroadcastStop    chan bool
+	ListenEventsStop chan bool
+	L                *sync.Mutex
 }
 
 type IBaseRoomManager interface {
@@ -23,12 +25,14 @@ type IBaseRoomManager interface {
 
 func NewBaseRoomManager() *BaseRoomManager {
 	return &BaseRoomManager{
-		Register:   make(chan interface{}, 1),
-		Unregister: make(chan interface{}, 1),
-		Update:     make(chan *Update, 10),
-		Notify:     make(chan *Notify, 1),
-		Broadcast:  make(chan *Envelope, 10),
-		L:          &sync.Mutex{},
+		Register:         make(chan interface{}, 1),
+		Unregister:       make(chan interface{}, 1),
+		Update:           make(chan *Update, 10),
+		Notify:           make(chan *Notify, 1),
+		Broadcast:        make(chan *Envelope, 10),
+		BroadcastStop:    make(chan bool),
+		ListenEventsStop: make(chan bool),
+		L:                &sync.Mutex{},
 	}
 }
 

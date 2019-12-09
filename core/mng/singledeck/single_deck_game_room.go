@@ -59,6 +59,10 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 				if s.PlayerConnection != nil {
 					s.PlayerConnection.Send <- e
 				}
+			case e := <-s.BroadcastStop:
+				if e {
+					return
+				}
 			}
 		}
 	}()
@@ -81,6 +85,10 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 			go func() {
 				s.gameStateChanged(gameStateEvent)
 			}()
+		case e := <-s.ListenEventsStop:
+			if e {
+				return
+			}
 		}
 	}
 }
@@ -170,6 +178,8 @@ func (m *SingleDeckGameRoom) OnDisconnect(c interface{}) {
 }
 
 func (m *SingleDeckGameRoom) PurgeRoom() {
+	m.BroadcastStop <- true
+	m.ListenEventsStop <- true
 	m.PlayerConnection = nil
 	Manager().RemoveGameRoom(m)
 }

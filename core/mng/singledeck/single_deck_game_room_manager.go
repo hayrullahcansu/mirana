@@ -1,7 +1,11 @@
 package singledeck
 
 import (
+	"fmt"
 	"sync"
+	"time"
+
+	"bitbucket.org/digitdreamteam/mirana/core/settings"
 )
 
 type SingleDeckGameRoomManager struct {
@@ -25,6 +29,34 @@ func initialGameManagerInstance() {
 	_instance = &SingleDeckGameRoomManager{
 		GameRooms:   make(map[*SingleDeckGameRoom]bool),
 		DefaultRoom: NewSingleDeckGameRoom(),
+	}
+	go func() {
+		_instance.work()
+	}()
+}
+
+func (manager *SingleDeckGameRoomManager) work() {
+	purgeTicker := time.NewTicker(settings.PURGE_PERIOD)
+	echoTicker := time.NewTicker(settings.ECHO_PERIOD)
+	defer func() {
+		purgeTicker.Stop()
+		echoTicker.Stop()
+	}()
+	for {
+		select {
+		case <-purgeTicker.C:
+			for _, ok := range _instance.GameRooms {
+				if ok {
+
+				}
+			}
+		case <-echoTicker.C:
+			for _, ok := range _instance.GameRooms {
+				if ok {
+					fmt.Println("room called")
+				}
+			}
+		}
 	}
 }
 
