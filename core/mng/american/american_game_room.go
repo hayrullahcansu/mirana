@@ -225,7 +225,7 @@ func (m *AmericanGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.WAIT_PLAYERS {
 		if client.PlaceBet(addMoney.InternalId, addMoney.Amount) {
 			m.Update <- &netw.Update{
 				Type: "account",
@@ -249,7 +249,7 @@ func (m *AmericanGameRoom) OnSplit(c interface{}, split *netw.Split) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.IN_PLAY {
 		m.split_player(client, split.InternalId)
 	}
 }
@@ -258,7 +258,7 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	m.L.Lock()
 	client, ok := c.(*AmericanSPClient)
 	//TODO: check balance and other controls
-	if ok {
+	if ok && m.GameStatu == gs.WAIT_PLAYERS {
 		if deal.Code == "deal_new_game" && m.GameStatu == gs.DONE {
 			m.resetGame(true)
 			var settings mdl.GameSettings
@@ -311,7 +311,7 @@ func (m *AmericanGameRoom) OnEvent(c interface{}, event *netw.Event) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.IN_PLAY {
 		if event.Code == "insurance" {
 			if event.Message == "true" {
 				if client.PlaceInsuranceBet(event.InternalId) {
@@ -337,7 +337,7 @@ func (m *AmericanGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	_, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.IN_PLAY {
 		for _, player := range m.GamePlayers {
 			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
 				m.pull_card_for_player(player)
@@ -350,7 +350,7 @@ func (m *AmericanGameRoom) OnStand(c interface{}, stand *netw.Stand) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	_, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.IN_PLAY {
 		for _, player := range m.GamePlayers {
 			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
 				m.skip_next_player()
