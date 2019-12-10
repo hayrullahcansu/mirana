@@ -93,6 +93,25 @@ func (s *SingleDeckGameRoom) ListenEvents() {
 	}
 }
 
+func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
+	m.GameStatu = state
+	switch state {
+	case gs.INIT:
+		m.init()
+		m.GameStateEvent <- gs.WAIT_PLAYERS
+	case gs.WAIT_PLAYERS:
+	case gs.PREPARING:
+		go m.prepare()
+	case gs.PRE_START:
+	case gs.IN_PLAY:
+		m.send_turn_play_message_current_player()
+	case gs.DONE:
+		m.checkWinLose()
+	case gs.PURGE:
+		m.PurgeRoom()
+	}
+}
+
 func (s *SingleDeckGameRoom) DoUpdate(update *netw.Update) {
 	switch update.Type {
 	case "account":
@@ -188,7 +207,7 @@ func (m *SingleDeckGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) 
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*SingleDeckSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.WAIT_PLAYERS {
 		//TODO: check player able to play?
 		mode := playGame.Mode
 		guid := uuid.New()
@@ -288,6 +307,69 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	}
 }
 
+func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	client, ok := c.(*SingleDeckSPClient)
+	if ok {
+		if event.Code == "insurance" {
+			if event.Message == "true" {
+				if client.PlaceInsuranceBet(event.InternalId) {
+					m.Update <- &netw.Update{
+						Type: "account",
+						Code: m.PlayerConnection.UserId,
+					}
+				}
+			}
+			// m.Broadcast <- &netw.Envelope{
+			// 	Client: "client_id",
+			// 	Message: &netw.AddMoney{
+			// 		InternalId: addMoney.InternalId,
+			// 		Amount:     addMoney.Amount,
+			// 	},
+			// 	MessageCode: netw.EAddMoney,
+			// }
+		}
+	}
+}
+
+func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	_, ok := c.(*SingleDeckSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
+				m.pull_card_for_player(player)
+			}
+		}
+	}
+}
+
+func (m *SingleDeckGameRoom) OnStand(c interface{}, stand *netw.Stand) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	_, ok := c.(*SingleDeckSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
+				m.skip_next_player()
+			}
+		}
+	}
+}
+
+func (m *SingleDeckGameRoom) PopCard() *mdl.Card {
+	element := m.Pack.Dequeue()
+	if element != nil {
+		return element.(*mdl.Card)
+	}
+	return nil
+}
+
+func (m *SingleDeckGameRoom) init() {
+	m.Pack = utils.GetSingleDeckPack()
+}
 func (m *SingleDeckGameRoom) resetGame(justClear bool) {
 	temp := make([]*SPPlayer, 0, 12)
 	if !justClear {
@@ -300,7 +382,6 @@ func (m *SingleDeckGameRoom) resetGame(justClear bool) {
 	}
 	m.GamePlayers = temp
 }
-
 func (m *SingleDeckGameRoom) prepare() {
 	m.L.Lock()
 	if len(m.Pack.Values) < CARD_COUNT_IN_ONE_DECK*DECK_NUMBER/2 {
@@ -432,69 +513,6 @@ func (m *SingleDeckGameRoom) split_player(client *SingleDeckSPClient, internalId
 	}
 }
 
-func (m *SingleDeckGameRoom) OnEvent(c interface{}, event *netw.Event) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	client, ok := c.(*SingleDeckSPClient)
-	if ok {
-		if event.Code == "insurance" {
-			if event.Message == "true" {
-				if client.PlaceInsuranceBet(event.InternalId) {
-					m.Update <- &netw.Update{
-						Type: "account",
-						Code: m.PlayerConnection.UserId,
-					}
-				}
-			}
-			// m.Broadcast <- &netw.Envelope{
-			// 	Client: "client_id",
-			// 	Message: &netw.AddMoney{
-			// 		InternalId: addMoney.InternalId,
-			// 		Amount:     addMoney.Amount,
-			// 	},
-			// 	MessageCode: netw.EAddMoney,
-			// }
-		}
-	}
-}
-
-func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	_, ok := c.(*SingleDeckSPClient)
-	if ok {
-		for _, player := range m.GamePlayers {
-			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
-				m.pull_card_for_player(player)
-			}
-		}
-	}
-}
-
-func (m *SingleDeckGameRoom) OnStand(c interface{}, stand *netw.Stand) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	_, ok := c.(*SingleDeckSPClient)
-	if ok {
-		for _, player := range m.GamePlayers {
-			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
-				m.skip_next_player()
-			}
-		}
-	}
-}
-
-func (m *SingleDeckGameRoom) PopCard() *mdl.Card {
-	element := m.Pack.Dequeue()
-	if element != nil {
-		return element.(*mdl.Card)
-	}
-	return nil
-}
-
-func (m *SingleDeckGameRoom) init() {
-	m.Pack = utils.GetSingleDeckPack()
-}
 func (m *SingleDeckGameRoom) skip_next_player() {
 	m.CurrentPlayerCursor--
 	m.next_play()
@@ -580,24 +598,6 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) {
 			MessageCode: netw.EEvent,
 		}
 		m.skip_next_player()
-	}
-}
-func (m *SingleDeckGameRoom) gameStateChanged(state gs.GameStatu) {
-	m.GameStatu = state
-	switch state {
-	case gs.INIT:
-		m.init()
-		m.GameStateEvent <- gs.WAIT_PLAYERS
-	case gs.WAIT_PLAYERS:
-	case gs.PREPARING:
-		go m.prepare()
-	case gs.PRE_START:
-	case gs.IN_PLAY:
-		m.send_turn_play_message_current_player()
-	case gs.DONE:
-		m.checkWinLose()
-	case gs.PURGE:
-		m.PurgeRoom()
 	}
 }
 

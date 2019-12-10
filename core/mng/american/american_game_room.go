@@ -93,6 +93,25 @@ func (s *AmericanGameRoom) ListenEvents() {
 	}
 }
 
+func (m *AmericanGameRoom) gameStateChanged(state gs.GameStatu) {
+	m.GameStatu = state
+	switch state {
+	case gs.INIT:
+		m.init()
+		m.GameStateEvent <- gs.WAIT_PLAYERS
+	case gs.WAIT_PLAYERS:
+	case gs.PREPARING:
+		go m.prepare()
+	case gs.PRE_START:
+	case gs.IN_PLAY:
+		m.send_turn_play_message_current_player()
+	case gs.DONE:
+		m.checkWinLose()
+	case gs.PURGE:
+		m.PurgeRoom()
+	}
+}
+
 func (s *AmericanGameRoom) DoUpdate(update *netw.Update) {
 	switch update.Type {
 	case "account":
@@ -188,7 +207,7 @@ func (m *AmericanGameRoom) OnPlayGame(c interface{}, playGame *netw.PlayGame) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok {
+	if ok && m.GameStatu == gs.WAIT_PLAYERS {
 		//TODO: check player able to play?
 		mode := playGame.Mode
 		guid := uuid.New()
@@ -288,6 +307,69 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	}
 }
 
+func (m *AmericanGameRoom) OnEvent(c interface{}, event *netw.Event) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	client, ok := c.(*AmericanSPClient)
+	if ok {
+		if event.Code == "insurance" {
+			if event.Message == "true" {
+				if client.PlaceInsuranceBet(event.InternalId) {
+					m.Update <- &netw.Update{
+						Type: "account",
+						Code: m.PlayerConnection.UserId,
+					}
+				}
+			}
+			// m.Broadcast <- &netw.Envelope{
+			// 	Client: "client_id",
+			// 	Message: &netw.AddMoney{
+			// 		InternalId: addMoney.InternalId,
+			// 		Amount:     addMoney.Amount,
+			// 	},
+			// 	MessageCode: netw.EAddMoney,
+			// }
+		}
+	}
+}
+
+func (m *AmericanGameRoom) OnHit(c interface{}, hit *netw.Hit) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	_, ok := c.(*AmericanSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
+				m.pull_card_for_player(player)
+			}
+		}
+	}
+}
+
+func (m *AmericanGameRoom) OnStand(c interface{}, stand *netw.Stand) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	_, ok := c.(*AmericanSPClient)
+	if ok {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
+				m.skip_next_player()
+			}
+		}
+	}
+}
+
+func (m *AmericanGameRoom) PopCard() *mdl.Card {
+	element := m.Pack.Dequeue()
+	if element != nil {
+		return element.(*mdl.Card)
+	}
+	return nil
+}
+
+func (m *AmericanGameRoom) init() {
+	m.Pack = utils.GetAmericanPack()
+}
 func (m *AmericanGameRoom) resetGame(justClear bool) {
 	temp := make([]*SPPlayer, 0, 12)
 	if !justClear {
@@ -432,69 +514,6 @@ func (m *AmericanGameRoom) split_player(client *AmericanSPClient, internalId str
 	}
 }
 
-func (m *AmericanGameRoom) OnEvent(c interface{}, event *netw.Event) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	client, ok := c.(*AmericanSPClient)
-	if ok {
-		if event.Code == "insurance" {
-			if event.Message == "true" {
-				if client.PlaceInsuranceBet(event.InternalId) {
-					m.Update <- &netw.Update{
-						Type: "account",
-						Code: m.PlayerConnection.UserId,
-					}
-				}
-			}
-			// m.Broadcast <- &netw.Envelope{
-			// 	Client: "client_id",
-			// 	Message: &netw.AddMoney{
-			// 		InternalId: addMoney.InternalId,
-			// 		Amount:     addMoney.Amount,
-			// 	},
-			// 	MessageCode: netw.EAddMoney,
-			// }
-		}
-	}
-}
-
-func (m *AmericanGameRoom) OnHit(c interface{}, hit *netw.Hit) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	_, ok := c.(*AmericanSPClient)
-	if ok {
-		for _, player := range m.GamePlayers {
-			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
-				m.pull_card_for_player(player)
-			}
-		}
-	}
-}
-
-func (m *AmericanGameRoom) OnStand(c interface{}, stand *netw.Stand) {
-	m.L.Lock()
-	defer m.L.Unlock()
-	_, ok := c.(*AmericanSPClient)
-	if ok {
-		for _, player := range m.GamePlayers {
-			if player.InternalId == stand.InternalId && stand.InternalId == m.TurnOfPlay {
-				m.skip_next_player()
-			}
-		}
-	}
-}
-
-func (m *AmericanGameRoom) PopCard() *mdl.Card {
-	element := m.Pack.Dequeue()
-	if element != nil {
-		return element.(*mdl.Card)
-	}
-	return nil
-}
-
-func (m *AmericanGameRoom) init() {
-	m.Pack = utils.GetAmericanPack()
-}
 func (m *AmericanGameRoom) skip_next_player() {
 	m.CurrentPlayerCursor--
 	m.next_play()
@@ -577,24 +596,6 @@ func (m *AmericanGameRoom) pull_card_for_player(player *SPPlayer) {
 			MessageCode: netw.EEvent,
 		}
 		m.skip_next_player()
-	}
-}
-func (m *AmericanGameRoom) gameStateChanged(state gs.GameStatu) {
-	m.GameStatu = state
-	switch state {
-	case gs.INIT:
-		m.init()
-		m.GameStateEvent <- gs.WAIT_PLAYERS
-	case gs.WAIT_PLAYERS:
-	case gs.PREPARING:
-		go m.prepare()
-	case gs.PRE_START:
-	case gs.IN_PLAY:
-		m.send_turn_play_message_current_player()
-	case gs.DONE:
-		m.checkWinLose()
-	case gs.PURGE:
-		m.PurgeRoom()
 	}
 }
 
