@@ -136,6 +136,14 @@ func (s *SingleDeckGameRoom) DoUpdate(update *netw.Update) {
 	}
 }
 
+func (s *SingleDeckGameRoom) SendGameConfig() {
+	s.Broadcast <- &netw.Envelope{
+		Client:      "client_id",
+		Message:     &netw.GameConfig{},
+		MessageCode: netw.EGameConfig,
+	}
+}
+
 func (s *SingleDeckGameRoom) OnNotify(notify *netw.Notify) {
 	d := notify.Message.Message
 	switch v := notify.Message.Message.(type) {
@@ -259,7 +267,7 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	client, ok := c.(*SingleDeckSPClient)
 	//TODO: check balance and other controls
 	if ok && m.GameStatu == gs.WAIT_PLAYERS {
-		if deal.Code == "deal_new_game" && m.GameStatu == gs.DONE {
+		if deal.Code == "rebet" && m.GameStatu == gs.DONE {
 			m.resetGame(true)
 			var settings mdl.GameSettings
 			bytes := []byte(deal.Payload)
@@ -288,15 +296,16 @@ func (m *SingleDeckGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 					}
 				}
 			}
-		}
-		client.Deal()
-		m.Broadcast <- &netw.Envelope{
-			Client: "client_id",
-			Message: &netw.Deal{
-				InternalId: deal.InternalId,
-				Code:       "dealed",
-			},
-			MessageCode: netw.EDeal,
+		} else {
+			client.Deal()
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.Deal{
+					InternalId: deal.InternalId,
+					Code:       "dealed",
+				},
+				MessageCode: netw.EDeal,
+			}
 		}
 	}
 	everyoneDealed := true
@@ -341,6 +350,22 @@ func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 		for _, player := range m.GamePlayers {
 			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
 				m.pull_card_for_player(player)
+			}
+		}
+	}
+}
+
+func (m *SingleDeckGameRoom) OnDouble(c interface{}, double *netw.Double) {
+	m.L.Lock()
+	defer m.L.Unlock()
+	client, ok := c.(*SingleDeckSPClient)
+	if ok && m.GameStatu == gs.IN_PLAY {
+		for _, player := range m.GamePlayers {
+			if player.InternalId == double.InternalId && double.InternalId == m.TurnOfPlay {
+				dd_ok := m.double_down_for_player(client, double.InternalId)
+				if dd_ok {
+					m.skip_next_player()
+				}
 			}
 		}
 	}
@@ -601,6 +626,30 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) {
 	}
 }
 
+func (m *SingleDeckGameRoom) double_down_for_player(client *SingleDeckSPClient, internalId string) bool {
+	player, ok := client.Players[internalId]
+	if ok {
+		if player.CanSplit && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
+			dd_ok := client.PlaceDoubleDown(internalId)
+			if dd_ok {
+				m.Broadcast <- &netw.Envelope{
+					Client: "client_id",
+					Message: &netw.Double{
+						InternalId: player.InternalId,
+					},
+					MessageCode: netw.EDouble,
+				}
+				m.Update <- &netw.Update{
+					Type: "account",
+					Code: client.UserId,
+				}
+				m.pull_card_for_player(player)
+				return true
+			}
+		}
+	}
+	return false
+}
 func (m *SingleDeckGameRoom) checkWinLose() {
 	// players := make([]*SPPlayer, 0, 6)
 	// for _, p := range m.GamePlayers {
@@ -687,5 +736,14 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 		Type: "account",
 		Code: m.PlayerConnection.UserId,
 	}
-
+	time.Sleep(time.Second * 5)
+	m.GameStateEvent <- gs.INIT
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Event{
+			InternalId: "server",
+			Code:       "you_can_play_again",
+		},
+		MessageCode: netw.EEvent,
+	}
 }

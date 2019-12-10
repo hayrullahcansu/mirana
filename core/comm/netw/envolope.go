@@ -80,21 +80,30 @@ type User struct {
 	Blackjack  int     `json:"blackjack"`
 }
 
+type GameConfig struct {
+	DeckNumber    int  `json:"deck_number"`
+	DeckAmount    int  `json:"deck_amount"`
+	CanDoubleDOwn bool `json:"can_double_down"`
+	DealerSoft    int  `json:"dealer_soft"`
+	MaxSplit      int  `json:"max_split"`
+}
+
 // MessageCode is enumarete all message types
 type MessageCode int
 
 // MessageCode is enumarete all message types
 const (
-	EEvent    MessageCode = iota + 0
-	EStamp                // 1
-	EAddMoney             // 2
-	EDeal                 // 3
-	EStand                // 4
-	EHit                  // 5
-	EDouble               // 6
-	EPlayGame             // 7
-	ESplit                // 8
-	EUser                 // 9
+	EEvent      MessageCode = iota + 0
+	EStamp                  // 1
+	EAddMoney               // 2
+	EDeal                   // 3
+	EStand                  // 4
+	EHit                    // 5
+	EDouble                 // 6
+	EPlayGame               // 7
+	ESplit                  // 8
+	EUser                   // 9
+	EGameConfig             // 10
 )
 
 var MessageCodes = []MessageCode{
@@ -108,4 +117,5 @@ var MessageCodes = []MessageCode{
 	EPlayGame,
 	ESplit,
 	EUser,
+	EGameConfig,
 }

@@ -46,6 +46,10 @@ func (c *AmericanSPClient) PlaceBet(internalId string, amount float32) bool {
 	return c.placeBet(internalId, amount, false)
 }
 
+func (c *AmericanSPClient) PlaceDoubleDown(internalId string) bool {
+	return c.placeDoubleDown(internalId)
+}
+
 func (c *AmericanSPClient) PlaceInsuranceBet(internalId string) bool {
 	return c.placeBet(internalId, 0, true)
 }
@@ -65,6 +69,25 @@ func (c *AmericanSPClient) placeBet(internalId string, amount float32, isInsuran
 		amount = p.Amount / 2
 	}
 	p.placeBet(amount, isInsurance)
+	cost := -1 * amount
+	api.Manager().AddAmount(c.UserId, cost)
+	c.SessionBalance += (cost)
+	return true
+}
+
+func (c *AmericanSPClient) placeDoubleDown(internalId string) bool {
+	p, ok := c.Players[internalId]
+	if !ok {
+		return ok
+	}
+
+	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, p.Amount); !greader {
+		//not enough money
+		return greader
+	}
+	amount := p.Amount
+
+	p.placeBet(amount, false)
 	cost := -1 * amount
 	api.Manager().AddAmount(c.UserId, cost)
 	c.SessionBalance += (cost)
