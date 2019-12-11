@@ -267,7 +267,7 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	client, ok := c.(*AmericanSPClient)
 	//TODO: check balance and other controls
 	if ok && m.GameStatu == gs.WAIT_PLAYERS {
-		if deal.Code == "rebet" && m.GameStatu == gs.DONE {
+		if deal.Code == "rebet" || deal.Code == "rebet_and_deal" {
 			m.resetGame(true)
 			var settings mdl.GameSettings
 			bytes := []byte(deal.Payload)
@@ -296,7 +296,8 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 					}
 				}
 			}
-		} else {
+		}
+		if deal.Code == "deal" || deal.Code == "rebet_and_deal" {
 			client.Deal()
 			m.Broadcast <- &netw.Envelope{
 				Client: "client_id",
