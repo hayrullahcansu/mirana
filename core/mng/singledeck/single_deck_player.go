@@ -14,6 +14,7 @@ type SingleDeckSPClient struct {
 	*netw.BaseClient
 	Players        map[string]*SPPlayer
 	IsDeal         bool
+	IsRebet        bool
 	SessionBalance float32
 }
 
@@ -97,6 +98,10 @@ func (c *SingleDeckSPClient) placeDoubleDown(internalId string) bool {
 func (c *SingleDeckSPClient) AddMoney(amount float32) {
 	api.Manager().AddAmount(c.UserId, amount)
 	c.SessionBalance += (amount)
+}
+
+func (c *SingleDeckSPClient) Reset() {
+	c.IsDeal = false
 }
 
 func (c *SPPlayer) Reset() {

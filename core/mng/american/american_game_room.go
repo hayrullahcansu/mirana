@@ -50,6 +50,24 @@ func NewAmericanGameRoom() *AmericanGameRoom {
 	return gameRoom
 }
 
+func (s *AmericanGameRoom) PrintRoomStatus() {
+
+	fmt.Printf("\n\n\n")
+	fmt.Printf("--------Room-------\n")
+	fmt.Printf("CurrentPlayerCursor:%d\n", s.CurrentPlayerCursor)
+	fmt.Printf("TurnOfPlay:%s\n", s.TurnOfPlay)
+	fmt.Printf("-------------------\n")
+	fmt.Printf("GameStatu %+v\n", s.GameStatu)
+	fmt.Printf("Client %+v\n", s.PlayerConnection)
+	fmt.Printf("-----Game Players----\n")
+	for i, p := range s.GamePlayers {
+		fmt.Printf("Player[%d] %+v\n", i, p)
+
+	}
+	fmt.Printf("---------------------\n")
+	fmt.Printf("\n\n\n")
+}
+
 func (s *AmericanGameRoom) ListenEvents() {
 	fmt.Println("GIRDI")
 	go func() {
@@ -267,9 +285,9 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 	client, ok := c.(*AmericanSPClient)
 	//TODO: check balance and other controls
 	if ok && m.GameStatu == gs.WAIT_PLAYERS {
-		if deal.Code == "rebet" || deal.Code == "rebet_and_deal" {
-			m.resetGame(true)
+		if !client.IsRebet && (deal.Code == "rebet" || deal.Code == "rebet_and_deal") {
 			var settings mdl.GameSettings
+			client.IsRebet = true
 			bytes := []byte(deal.Payload)
 			if err := json.Unmarshal(bytes, &settings); err != nil {
 				log.Fatal(err)
@@ -304,6 +322,15 @@ func (m *AmericanGameRoom) OnDeal(c interface{}, deal *netw.Deal) {
 				Message: &netw.Deal{
 					InternalId: deal.InternalId,
 					Code:       "dealed",
+				},
+				MessageCode: netw.EDeal,
+			}
+		} else {
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.Deal{
+					InternalId: deal.InternalId,
+					Code:       "rebet",
 				},
 				MessageCode: netw.EDeal,
 			}
@@ -397,6 +424,9 @@ func (m *AmericanGameRoom) init() {
 	m.Pack = utils.GetAmericanPack()
 }
 func (m *AmericanGameRoom) resetGame(justClear bool) {
+	if m.PlayerConnection != nil {
+		m.PlayerConnection.Reset()
+	}
 	temp := make([]*SPPlayer, 0, 12)
 	if !justClear {
 		for _, player := range m.GamePlayers {
@@ -746,5 +776,5 @@ func (m *AmericanGameRoom) checkWinLose() {
 		},
 		MessageCode: netw.EEvent,
 	}
-
+	m.resetGame(true)
 }

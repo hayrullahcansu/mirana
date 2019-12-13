@@ -14,6 +14,7 @@ type AmericanSPClient struct {
 	*netw.BaseClient
 	Players        map[string]*SPPlayer
 	IsDeal         bool
+	IsRebet        bool
 	SessionBalance float32
 }
 
@@ -99,6 +100,9 @@ func (c *AmericanSPClient) AddMoney(amount float32) {
 	c.SessionBalance += (amount)
 }
 
+func (c *AmericanSPClient) Reset() {
+	c.IsDeal = false
+}
 func (c *SPPlayer) Reset() {
 	c.Cards = make([]*mdl.Card, 0, 10)
 }

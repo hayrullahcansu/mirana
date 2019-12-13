@@ -1,7 +1,6 @@
 package singledeck
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -51,9 +50,9 @@ func (manager *SingleDeckGameRoomManager) work() {
 				}
 			}
 		case <-echoTicker.C:
-			for _, ok := range _instance.GameRooms {
+			for r, ok := range _instance.GameRooms {
 				if ok {
-					fmt.Println("room called")
+					r.PrintRoomStatus()
 				}
 			}
 		}
