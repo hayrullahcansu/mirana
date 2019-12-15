@@ -3,12 +3,16 @@ package routes
 import (
 	"net/http"
 
+	"bitbucket.org/digitdreamteam/mirana/utils"
+
+	"github.com/sirupsen/logrus"
+
 	"bitbucket.org/digitdreamteam/mirana/core/mng/lobby"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid
 func JoinLobbyHandler(w http.ResponseWriter, r *http.Request) {
-
+	logrus.Infof("A client joint Lobby\n%s", utils.FormatRequest(r))
 	c := lobby.NewClient()
 	c.ServeWs(w, r)
 	lobby.Manager().ConnectLobby(c)

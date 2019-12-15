@@ -2,11 +2,11 @@ package service
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 
 	"bitbucket.org/digitdreamteam/mirana/core/service/routes"
+	"github.com/sirupsen/logrus"
 )
 
 var addr = flag.String("addr", "0.0.0.0:3535", "http service address")
@@ -24,7 +24,7 @@ var appLiveVersion = flag.String("app_live_version", "1.0.0", "http spinner hand
 func RunHandlers() {
 	defer func() {
 		if x := recover(); x != nil {
-			log.Printf("run time panic: %v", x)
+			logrus.Errorf("run time panic: %v", x)
 			//TODO: save the state and initlaize again.
 			RunHandlers()
 		}
@@ -50,7 +50,6 @@ func RunHandlers() {
 
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
-		fmt.Println(err)
-		log.Fatal("ListenAndServe: ", err)
+		logrus.Fatal("ListenAndServe: ", err)
 	}
 }

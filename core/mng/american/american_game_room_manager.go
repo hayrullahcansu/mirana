@@ -1,6 +1,7 @@
 package american
 
 import (
+	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 
@@ -61,6 +62,7 @@ func (manager *AmericanGameRoomManager) work() {
 
 func (manager *AmericanGameRoomManager) RequestPlayGame(c *AmericanSPClient) {
 	g := NewAmericanGameRoom()
+	logrus.Infof("American Game Room Created")
 	manager.GameRooms[g] = true
 	g.ConnectGame(c)
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"bitbucket.org/digitdreamteam/mirana/core/api"
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
@@ -206,18 +207,23 @@ func (m *AmericanGameRoom) ConnectGame(c *AmericanSPClient) {
 func (m *AmericanGameRoom) OnConnect(c interface{}) {
 	client, ok := c.(*AmericanSPClient)
 	if ok {
+		logrus.Infof("Player Connected UserId:%s", client.UserId)
 		client.Unregister = m.Unregister
 		m.Update <- &netw.Update{
 			Type: "account",
 			Code: client.UserId,
 		}
+	} else {
+		logrus.Error("AmericanSPClient Cast Exception")
 	}
 }
 func (m *AmericanGameRoom) OnDisconnect(c interface{}) {
-	_, ok := c.(*AmericanSPClient)
+	client, ok := c.(*AmericanSPClient)
 	if ok {
-		fmt.Println("OnDisconnect")
+		logrus.Infof("Player Diconnected UserId:%s", client.UserId)
 		m.GameStateEvent <- gs.PURGE
+	} else {
+		logrus.Error("AmericanSPClient Cast Exception")
 	}
 }
 
@@ -251,23 +257,32 @@ func (m *AmericanGameRoom) OnAddMoney(c interface{}, addMoney *netw.AddMoney) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok && m.GameStatu == gs.WAIT_PLAYERS {
-		if client.PlaceBet(addMoney.InternalId, addMoney.Amount) {
-			m.Update <- &netw.Update{
-				Type: "account",
-				Code: client.UserId,
-			}
-			m.Broadcast <- &netw.Envelope{
-				Client: "client_id",
-				Message: &netw.AddMoney{
-					InternalId: addMoney.InternalId,
-					Amount:     addMoney.Amount,
-				},
-				MessageCode: netw.EAddMoney,
+	if ok {
+		logrus.Infof("UserId:%s Req:OnAddMoney Model:%s", client.UserId, utils.ToJson(addMoney))
+		if m.GameStatu == gs.WAIT_PLAYERS {
+			if client.PlaceBet(addMoney.InternalId, addMoney.Amount) {
+				logrus.Infof("UserId:%s PlacedBet Amount:%f", client.UserId, addMoney.Amount)
+				m.Update <- &netw.Update{
+					Type: "account",
+					Code: client.UserId,
+				}
+				m.Broadcast <- &netw.Envelope{
+					Client: "client_id",
+					Message: &netw.AddMoney{
+						InternalId: addMoney.InternalId,
+						Amount:     addMoney.Amount,
+					},
+					MessageCode: netw.EAddMoney,
+				}
+			} else {
+				logrus.Infof("UserId:%s Amount:%f Not Enough", client.UserId, addMoney.Amount)
+				//TODO: send not enough balance
 			}
 		} else {
-			//TODO: send not enough balance
+			logrus.Warnf("UserId:%s Invalid Request", client.UserId)
 		}
+	} else {
+		logrus.Error("AmericanSPClient Cast Exception")
 	}
 }
 
@@ -275,8 +290,15 @@ func (m *AmericanGameRoom) OnSplit(c interface{}, split *netw.Split) {
 	m.L.Lock()
 	defer m.L.Unlock()
 	client, ok := c.(*AmericanSPClient)
-	if ok && m.GameStatu == gs.IN_PLAY {
-		m.split_player(client, split.InternalId)
+	if ok {
+		logrus.Infof("UserId:%s Req:OnSplit Model:%s", client.UserId, utils.ToJson(split))
+		if m.GameStatu == gs.IN_PLAY {
+			m.split_player(client, split.InternalId)
+		} else {
+			logrus.Warnf("UserId:%s Invalid Request", client.UserId)
+		}
+	} else {
+		logrus.Error("AmericanSPClient Cast Exception")
 	}
 }
 
