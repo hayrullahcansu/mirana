@@ -463,6 +463,7 @@ func (m *SingleDeckGameRoom) resetGame(justClear bool) {
 }
 func (m *SingleDeckGameRoom) prepare() {
 	m.L.Lock()
+	logrus.Warn("deck size:%d  limit:%d", len(m.Pack.Values), CARD_COUNT_IN_ONE_DECK*DECK_NUMBER/2)
 	if len(m.Pack.Values) < CARD_COUNT_IN_ONE_DECK*DECK_NUMBER/2 {
 		//generate new cards
 		m.init()
@@ -721,6 +722,12 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 		if m.System.Point > 21 {
 			if p.Point < 21 {
 				p.GameResult = gr.WIN
+			} else if p.Point == 21 {
+				if p.IsBlackjack() {
+					p.GameResult = gr.BLACKJACK
+				} else {
+					p.GameResult = gr.WIN
+				}
 			} else {
 				p.GameResult = gr.LOSE
 			}
@@ -734,7 +741,13 @@ func (m *SingleDeckGameRoom) checkWinLose() {
 			// equals m.System.Point < 21
 			if p.Point > 21 {
 				p.GameResult = gr.LOSE
-			} else if p.Point == 21 || p.Point > m.System.Point {
+			} else if p.Point == 21 {
+				if p.IsBlackjack() {
+					p.GameResult = gr.BLACKJACK
+				} else {
+					p.GameResult = gr.WIN
+				}
+			} else if p.Point > m.System.Point {
 				p.GameResult = gr.WIN
 			} else if p.Point == m.System.Point {
 				p.GameResult = gr.PUSH

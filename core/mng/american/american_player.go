@@ -208,6 +208,12 @@ func (c *SPPlayer) IsInsuranceWorked() bool {
 	}
 	return false
 }
+func (c *SPPlayer) IsBlackjack() bool {
+	if len(c.Cards) == 2 && c.Point == 21 {
+		return true
+	}
+	return false
+}
 
 func (c *SPPlayer) setCanSplit() {
 	if len(c.Cards) == 2 {

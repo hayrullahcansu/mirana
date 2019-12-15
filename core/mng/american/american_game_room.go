@@ -719,6 +719,12 @@ func (m *AmericanGameRoom) checkWinLose() {
 		if m.System.Point > 21 {
 			if p.Point < 21 {
 				p.GameResult = gr.WIN
+			} else if p.Point == 21 {
+				if p.IsBlackjack() {
+					p.GameResult = gr.BLACKJACK
+				} else {
+					p.GameResult = gr.WIN
+				}
 			} else {
 				p.GameResult = gr.LOSE
 			}
@@ -732,7 +738,13 @@ func (m *AmericanGameRoom) checkWinLose() {
 			// equals m.System.Point < 21
 			if p.Point > 21 {
 				p.GameResult = gr.LOSE
-			} else if p.Point == 21 || p.Point > m.System.Point {
+			} else if p.Point == 21 {
+				if p.IsBlackjack() {
+					p.GameResult = gr.BLACKJACK
+				} else {
+					p.GameResult = gr.WIN
+				}
+			} else if p.Point > m.System.Point {
 				p.GameResult = gr.WIN
 			} else if p.Point == m.System.Point {
 				p.GameResult = gr.PUSH
