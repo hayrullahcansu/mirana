@@ -103,6 +103,7 @@ func (c *AmericanSPClient) AddMoney(amount float32) {
 
 func (c *AmericanSPClient) Reset() {
 	c.IsDeal = false
+	c.IsRebet = false
 }
 func (c *SPPlayer) Reset() {
 	c.Cards = make([]*mdl.Card, 0, 10)

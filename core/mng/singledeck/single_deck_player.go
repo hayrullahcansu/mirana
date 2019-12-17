@@ -103,6 +103,7 @@ func (c *SingleDeckSPClient) AddMoney(amount float32) {
 
 func (c *SingleDeckSPClient) Reset() {
 	c.IsDeal = false
+	c.IsRebet = false
 }
 
 func (c *SPPlayer) Reset() {
