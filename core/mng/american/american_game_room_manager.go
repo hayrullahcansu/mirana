@@ -1,9 +1,10 @@
 package american
 
 import (
-	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"bitbucket.org/digitdreamteam/mirana/core/settings"
 )

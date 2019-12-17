@@ -30,17 +30,18 @@ func NewClient(userId string) *AmericanSPClient {
 }
 
 type SPPlayer struct {
-	Amount          float32
-	InsuranceAmount float32
-	InternalId      string
-	Cards           []*mdl.Card
-	IsSystem        bool
-	Point           int
-	Point2          int
-	IsSplit         bool
-	IsInsurance     bool
-	CanSplit        bool
-	GameResult      gr.GameResult
+	Amount            float32
+	InsuranceAmount   float32
+	InternalId        string
+	Cards             []*mdl.Card
+	IsSystem          bool
+	Point             int
+	Point2            int
+	IsSplit           bool
+	IsInsurance       bool
+	CanSplit          bool
+	DoubleDownCounter int
+	GameResult        gr.GameResult
 }
 
 func (c *AmericanSPClient) PlaceBet(internalId string, amount float32) bool {
@@ -105,6 +106,7 @@ func (c *AmericanSPClient) Reset() {
 }
 func (c *SPPlayer) Reset() {
 	c.Cards = make([]*mdl.Card, 0, 10)
+	c.DoubleDownCounter = 0
 }
 
 func (c *AmericanSPClient) Deal() {

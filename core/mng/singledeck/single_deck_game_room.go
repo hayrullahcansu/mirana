@@ -23,6 +23,7 @@ const (
 	STAND_ON_SOFT_POINT    = 17
 	DECK_NUMBER            = 1
 	CARD_COUNT_IN_ONE_DECK = 52
+	DOUBLE_DOWN_LIMIT      = 1
 )
 
 type SingleDeckGameRoom struct {
@@ -400,7 +401,9 @@ func (m *SingleDeckGameRoom) OnHit(c interface{}, hit *netw.Hit) {
 	if ok && m.GameStatu == gs.IN_PLAY {
 		for _, player := range m.GamePlayers {
 			if player.InternalId == hit.InternalId && hit.InternalId == m.TurnOfPlay {
-				m.pull_card_for_player(player)
+				if m.pull_card_for_player(player) {
+					m.skip_next_player()
+				}
 			}
 		}
 	}
@@ -653,7 +656,7 @@ func (m *SingleDeckGameRoom) pull_card_for_system() {
 	}
 }
 
-func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) {
+func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) bool {
 	card := m.PopCard()
 	if card == nil {
 		fmt.Println(fmt.Sprintf("BUG OLUSTU CUNKU BITTI %d", len(m.Pack.Values)))
@@ -677,14 +680,15 @@ func (m *SingleDeckGameRoom) pull_card_for_player(player *SPPlayer) {
 			},
 			MessageCode: netw.EEvent,
 		}
-		m.skip_next_player()
+		return true
 	}
+	return false
 }
 
 func (m *SingleDeckGameRoom) double_down_for_player(client *SingleDeckSPClient, internalId string) bool {
 	player, ok := client.Players[internalId]
 	if ok {
-		if player.CanSplit && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
+		if player.DoubleDownCounter < DOUBLE_DOWN_LIMIT && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
 			dd_ok := client.PlaceDoubleDown(internalId)
 			if dd_ok {
 				m.Broadcast <- &netw.Envelope{
