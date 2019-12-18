@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mng/american"
+	blackjack "bitbucket.org/digitdreamteam/mirana/core/mng/singledeck"
 	"bitbucket.org/digitdreamteam/mirana/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -15,8 +15,8 @@ func JoinRoomAmericanGameHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.URL.Query().Get("user-id")
 	if userId != "" {
 		fmt.Println("UserId:" + userId)
-		c := american.NewClient(userId)
+		c := blackjack.NewClient(userId)
 		c.ServeWs(w, r)
-		american.Manager().RequestPlayGame(c)
+		blackjack.Manager().RequestAmericanPlayGame(c)
 	}
 }

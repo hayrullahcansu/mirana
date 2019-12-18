@@ -1,4 +1,4 @@
-package singledeck
+package blackjack
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
 )
 
-type SingleDeckSPClient struct {
+type BlackjackClient struct {
 	*netw.BaseClient
 	Players        map[string]*SPPlayer
 	IsDeal         bool
@@ -18,9 +18,9 @@ type SingleDeckSPClient struct {
 	SessionBalance float32
 }
 
-func NewClient(userId string) *SingleDeckSPClient {
+func NewClient(userId string) *BlackjackClient {
 
-	client := &SingleDeckSPClient{
+	client := &BlackjackClient{
 		Players: make(map[string]*SPPlayer),
 	}
 	base := netw.NewBaseClient(client)
@@ -44,19 +44,19 @@ type SPPlayer struct {
 	GameResult        gr.GameResult
 }
 
-func (c *SingleDeckSPClient) PlaceBet(internalId string, amount float32) bool {
+func (c *BlackjackClient) PlaceBet(internalId string, amount float32) bool {
 	return c.placeBet(internalId, amount, false)
 }
 
-func (c *SingleDeckSPClient) PlaceDoubleDown(internalId string) bool {
+func (c *BlackjackClient) PlaceDoubleDown(internalId string) bool {
 	return c.placeDoubleDown(internalId)
 }
 
-func (c *SingleDeckSPClient) PlaceInsuranceBet(internalId string) bool {
+func (c *BlackjackClient) PlaceInsuranceBet(internalId string) bool {
 	return c.placeBet(internalId, 0, true)
 }
 
-func (c *SingleDeckSPClient) placeBet(internalId string, amount float32, isInsurance bool) bool {
+func (c *BlackjackClient) placeBet(internalId string, amount float32, isInsurance bool) bool {
 	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, amount); !greader {
 		//not enough money
 		return greader
@@ -77,7 +77,7 @@ func (c *SingleDeckSPClient) placeBet(internalId string, amount float32, isInsur
 	return true
 }
 
-func (c *SingleDeckSPClient) placeDoubleDown(internalId string) bool {
+func (c *BlackjackClient) placeDoubleDown(internalId string) bool {
 	p, ok := c.Players[internalId]
 	if !ok {
 		return ok
@@ -96,12 +96,12 @@ func (c *SingleDeckSPClient) placeDoubleDown(internalId string) bool {
 	return true
 }
 
-func (c *SingleDeckSPClient) AddMoney(amount float32) {
+func (c *BlackjackClient) AddMoney(amount float32) {
 	api.Manager().AddAmount(c.UserId, amount)
 	c.SessionBalance += (amount)
 }
 
-func (c *SingleDeckSPClient) Reset() {
+func (c *BlackjackClient) Reset() {
 	c.IsDeal = false
 	c.IsRebet = false
 }
@@ -111,7 +111,7 @@ func (c *SPPlayer) Reset() {
 	c.DoubleDownCounter = 0
 }
 
-func (c *SingleDeckSPClient) Deal() {
+func (c *BlackjackClient) Deal() {
 	c.IsDeal = true
 }
 func NewSplitedSPPlayer(ref *SPPlayer) *SPPlayer {
