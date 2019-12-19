@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	blackjack "bitbucket.org/digitdreamteam/mirana/core/mng/singledeck"
+	"bitbucket.org/digitdreamteam/mirana/core/mng/blackjack"
 	"bitbucket.org/digitdreamteam/mirana/utils"
 	"github.com/sirupsen/logrus"
 )

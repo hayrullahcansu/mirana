@@ -4,7 +4,9 @@ type Rule struct {
 	StandInSoftPoint   int
 	DeckNumber         int
 	CardCountInOneDeck int
+	SplitLimit         int
 	DoubleDownLimit    int
+	AceCanSplit        bool
 }
 
 func GetRules(gameType GameType) *Rule {
@@ -23,7 +25,9 @@ func getSingleDeckRules() *Rule {
 		StandInSoftPoint:   17,
 		DeckNumber:         1,
 		CardCountInOneDeck: 52,
-		DoubleDownLimit:    1,
+		SplitLimit:         3,
+		DoubleDownLimit:    3,
+		AceCanSplit:        true,
 	}
 }
 
@@ -32,7 +36,9 @@ func getAmericanRules() *Rule {
 		StandInSoftPoint:   17,
 		DeckNumber:         4,
 		CardCountInOneDeck: 52,
+		SplitLimit:         4,
 		DoubleDownLimit:    4,
+		AceCanSplit:        true,
 	}
 }
 

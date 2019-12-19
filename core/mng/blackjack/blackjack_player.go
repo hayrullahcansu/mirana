@@ -56,6 +56,7 @@ func (c *BlackjackClient) PlaceInsuranceBet(internalId string) bool {
 	return c.placeBet(internalId, 0, true)
 }
 
+//TODO: fix .Players to GamePlayers
 func (c *BlackjackClient) placeBet(internalId string, amount float32, isInsurance bool) bool {
 	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, amount); !greader {
 		//not enough money
@@ -154,6 +155,7 @@ func (c *SPPlayer) RemoveCard(index int) *mdl.Card {
 	tempCard := c.Cards[index]
 	c.Cards = append(c.Cards[:index], c.Cards[index+1:]...)
 	c.calculateScore()
+	c.setCanSplit()
 	return tempCard
 }
 func (c *SPPlayer) HitCard(card *mdl.Card) {
@@ -222,7 +224,7 @@ func (c *SPPlayer) setCanSplit() {
 	if len(c.Cards) == 2 {
 		fmt.Printf(".")
 	}
-	if !c.IsSplit && len(c.Cards) == 2 && c.Cards[0].CardValue.Value() == c.Cards[1].CardValue.Value() {
+	if len(c.Cards) == 2 && c.Cards[0].CardValue.Value() == c.Cards[1].CardValue.Value() {
 		c.CanSplit = true
 	} else {
 		c.CanSplit = false

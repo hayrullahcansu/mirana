@@ -32,6 +32,7 @@ type BlackjackGameRoom struct {
 	Pack                *que.Queue
 	GameType            GameType
 	Rule                *Rule
+	RuleModule          *RuleModule
 }
 
 func NewBlackjackGameRoom(gameType GameType) *BlackjackGameRoom {
@@ -44,6 +45,7 @@ func NewBlackjackGameRoom(gameType GameType) *BlackjackGameRoom {
 		GameStatu:       gs.NONE,
 		GameType:        gameType,
 		Rule:            rules,
+		RuleModule:      NewRuleModule(),
 	}
 	go gameRoom.ListenEvents()
 	gameRoom.GameStateEvent <- gs.INIT
@@ -292,7 +294,9 @@ func (m *BlackjackGameRoom) OnSplit(c interface{}, split *netw.Split) {
 	if ok {
 		logrus.Infof("UserId:%s Req:OnSplit Model:%s", client.UserId, utils.ToJson(split))
 		if m.GameStatu == gs.IN_PLAY {
-			m.split_player(client, split.InternalId)
+			if m.RuleModule.CheckCanSplit(split.InternalId, m.Rule) {
+				m.split_player(client, split.InternalId)
+			}
 		} else {
 			logrus.Warnf("UserId:%s Invalid Request", client.UserId)
 		}
@@ -414,9 +418,11 @@ func (m *BlackjackGameRoom) OnDouble(c interface{}, double *netw.Double) {
 	if ok && m.GameStatu == gs.IN_PLAY {
 		for _, player := range m.GamePlayers {
 			if player.InternalId == double.InternalId && double.InternalId == m.TurnOfPlay {
-				dd_ok := m.double_down_for_player(client, double.InternalId)
-				if dd_ok {
-					m.skip_next_player()
+				if m.RuleModule.CheckCanDoubleDown(double.InternalId, m.Rule) {
+					dd_ok := m.double_down_for_player(client, double.InternalId)
+					if dd_ok {
+						m.skip_next_player()
+					}
 				}
 			}
 		}
@@ -528,7 +534,7 @@ func (m *BlackjackGameRoom) prepare() {
 		m.ask_insurance()
 	}
 	//split asking if check
-	m.split_asking_if_check()
+	// m.split_asking_if_check()
 	m.L.Unlock()
 	m.GameStateEvent <- gs.IN_PLAY
 }
@@ -564,21 +570,21 @@ func (m *BlackjackGameRoom) split_player(client *BlackjackClient, internalId str
 	var splitedPlayer *SPPlayer
 	if ok {
 		if player.CanSplit && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
-			secondCard := player.RemoveCard(1)
 			splitedPlayer = NewSplitedSPPlayer(player)
-			splitedPlayer.HitCard(secondCard)
-			player.IsSplit = true
-			card := m.PopCard()
-			player.HitCard(card)
-			card = m.PopCard()
-			splitedPlayer.HitCard(card)
+			//this line comment out incorrect split operation.
+			// card = m.PopCard()
+			// splitedPlayer.HitCard(card)
 			m.GamePlayers = append(m.GamePlayers, splitedPlayer)
 			m.CurrentPlayerCursor++
 			copy(m.GamePlayers[m.CurrentPlayerCursor:], m.GamePlayers[m.CurrentPlayerCursor-1:])
 			m.GamePlayers[m.CurrentPlayerCursor-1] = splitedPlayer
-			RefCards := player.GetCardStringCommaDelemited()
-			SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
+			// RefCards := player.GetCardStringCommaDelemited()
+			// SplitedPlayerCards := splitedPlayer.GetCardStringCommaDelemited()
 			if client.PlaceBet(splitedPlayer.InternalId, player.Amount) {
+				m.RuleModule.IncreaseSplitCounter(internalId)
+				secondCard := player.RemoveCard(1)
+				splitedPlayer.HitCard(secondCard)
+				player.IsSplit = true
 				m.Update <- &netw.Update{
 					Type: "account",
 					Code: client.UserId,
@@ -586,16 +592,21 @@ func (m *BlackjackGameRoom) split_player(client *BlackjackClient, internalId str
 				m.Broadcast <- &netw.Envelope{
 					Client: "client_id",
 					Message: &netw.Split{
-						InternalId:         splitedPlayer.InternalId,
-						Amount:             splitedPlayer.Amount,
-						Ref:                player.InternalId,
-						RefCards:           RefCards,
-						SplitedPlayerCards: SplitedPlayerCards,
+						InternalId: splitedPlayer.InternalId,
+						Amount:     splitedPlayer.Amount,
+						Ref:        player.InternalId,
+						// RefCards:           RefCards,
+						// SplitedPlayerCards: SplitedPlayerCards,
 					},
 					MessageCode: netw.ESplit,
 				}
+				if m.pull_card_for_player(player) {
+					m.skip_next_player()
+				}
 			} else {
-
+				//Remove splitted player
+				m.GamePlayers = append(m.GamePlayers[:m.CurrentPlayerCursor-1], m.GamePlayers[m.CurrentPlayerCursor:]...)
+				m.CurrentPlayerCursor--
 			}
 
 			time.Sleep(time.Millisecond * 300)
@@ -637,11 +648,31 @@ func (m *BlackjackGameRoom) send_turn_play_message_current_player() {
 		return
 	}
 	m.TurnOfPlay = player.InternalId
+	if player.IsSplit {
+		player.IsSplit = false
+		if m.pull_card_for_playerfor(player) {
+			m.skip_next_player()
+		}
+
+	}
+	message := ""
+	if player.CanSplit && m.RuleModule.CheckCanSplit(player.InternalId, m.Rule) {
+		message += "show_split_button "
+	} else {
+		message += "hide_split_button "
+	}
+	if m.RuleModule.CheckCanDoubleDown(player.InternalId, m.Rule) {
+		message += "show_double_down_button "
+	} else {
+		message += "hide_double_down_button "
+	}
+
 	m.Broadcast <- &netw.Envelope{
 		Client: "client_id",
 		Message: &netw.Event{
 			InternalId: player.InternalId,
 			Code:       "turn_play",
+			Message:    message,
 		},
 		MessageCode: netw.EEvent,
 	}
@@ -698,12 +729,45 @@ func (m *BlackjackGameRoom) pull_card_for_player(player *SPPlayer) bool {
 	return false
 }
 
+func (m *BlackjackGameRoom) pull_card_for_playerfor(player *SPPlayer) bool {
+	firstCard := player.Cards[0]
+	card := mdl.NewCardData(firstCard.CardType, firstCard.CardValue)
+
+	if card == nil {
+		fmt.Println(fmt.Sprintf("BUG OLUSTU CUNKU BITTI %d", len(m.Pack.Values)))
+	}
+	player.HitCard(card)
+	m.Broadcast <- &netw.Envelope{
+		Client: "client_id",
+		Message: &netw.Hit{
+			InternalId: player.InternalId,
+			Card:       card.String(),
+			Visible:    player.CardVisibility(),
+		},
+		MessageCode: netw.EHit,
+	}
+	if player.GameResult == gr.LOSE {
+		m.Broadcast <- &netw.Envelope{
+			Client: "client_id",
+			Message: &netw.Event{
+				InternalId: player.InternalId,
+				Code:       "player_lose",
+			},
+			MessageCode: netw.EEvent,
+		}
+		return true
+	} else if player.Point >= 21 {
+		return true
+	}
+	return false
+}
 func (m *BlackjackGameRoom) double_down_for_player(client *BlackjackClient, internalId string) bool {
 	player, ok := client.Players[internalId]
 	if ok {
 		if player.DoubleDownCounter < m.Rule.DoubleDownLimit && api.Manager().CheckAmountGreaderThan(client.UserId, player.Amount) {
 			dd_ok := client.PlaceDoubleDown(internalId)
 			if dd_ok {
+				m.RuleModule.IncreaseDoubleDownCounter(internalId)
 				m.Broadcast <- &netw.Envelope{
 					Client: "client_id",
 					Message: &netw.Double{
