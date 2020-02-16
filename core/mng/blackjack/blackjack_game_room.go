@@ -443,6 +443,10 @@ func (m *BlackjackGameRoom) OnStand(c interface{}, stand *netw.Stand) {
 }
 
 func (m *BlackjackGameRoom) PopCard() *mdl.Card {
+	// return &mdl.Card{
+	// 	CardType:  mdl.CT_Diamonds,
+	// 	CardValue: mdl.CV_JACK,
+	// }
 	element := m.Pack.Dequeue()
 	if element != nil {
 		return element.(*mdl.Card)
@@ -837,32 +841,40 @@ func (m *BlackjackGameRoom) checkWinLose() {
 			}
 		}
 	}
+	var winMoney, total float32
 	for _, p := range m.GamePlayers {
 		if p.IsInsurance && m.System.IsInsuranceWorked() {
+			winMoney = p.Amount
+			m.PlayerConnection.AddMoney(winMoney)
 			fmt.Printf("Insurance %s\n", p.InternalId)
-			m.PlayerConnection.AddMoney(p.Amount)
 		}
 		messsage := "player_lose"
 		id := p.InternalId
 		switch p.GameResult {
 		case gr.WIN:
-			m.PlayerConnection.AddMoney(p.Amount * 2)
+			winMoney = p.Amount * 2
+			m.PlayerConnection.AddMoney(winMoney)
 			fmt.Printf("Winner %s\n", p.InternalId)
 			messsage = "player_win"
 		case gr.LOSE:
+			winMoney = 0
 			fmt.Printf("Loser %s\n", p.InternalId)
 			messsage = "player_lose"
 		case gr.PUSH:
-			m.PlayerConnection.AddMoney(p.Amount)
+			winMoney = p.Amount
+			m.PlayerConnection.AddMoney(winMoney)
 			fmt.Printf("Push %s\n", p.InternalId)
 			messsage = "player_push"
 		case gr.BLACKJACK:
-			m.PlayerConnection.AddMoney(p.Amount * 5 / 2)
+			winMoney = p.Amount * 5 / 2
+			m.PlayerConnection.AddMoney(winMoney)
 			fmt.Printf("Blackjack %s\n", p.InternalId)
 			messsage = "player_blackjack"
 		default:
+			winMoney = 0
 			fmt.Printf("Default %s\n", p.InternalId)
 		}
+		total += winMoney
 		m.Broadcast <- &netw.Envelope{
 			Client: "client_id",
 			Message: &netw.Event{
@@ -877,6 +889,7 @@ func (m *BlackjackGameRoom) checkWinLose() {
 		Message: &netw.Event{
 			InternalId: "server",
 			Code:       "game_done",
+			Message:    fmt.Sprintf("%f", total),
 		},
 		MessageCode: netw.EEvent,
 	}

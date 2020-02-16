@@ -16,7 +16,7 @@ func JoinRoomNormalGameHandler(w http.ResponseWriter, r *http.Request) {
 	if userId != "" {
 		fmt.Println("UserId:" + userId)
 		c := blackjack.NewClient(userId)
-		c.ServeWs(w, r)
+		c.ServeWs(w, r)	
 		blackjack.Manager().RequestSingleDeckPlayGame(c)
 	}
 }
