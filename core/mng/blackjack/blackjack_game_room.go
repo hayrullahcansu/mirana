@@ -384,14 +384,19 @@ func (m *BlackjackGameRoom) OnEvent(c interface{}, event *netw.Event) {
 					}
 				}
 			}
-			// m.Broadcast <- &netw.Envelope{
-			// 	Client: "client_id",
-			// 	Message: &netw.AddMoney{
-			// 		InternalId: addMoney.InternalId,
-			// 		Amount:     addMoney.Amount,
-			// 	},
-			// 	MessageCode: netw.EAddMoney,
-			// }
+		}
+	} else if ok && m.GameStatu == gs.WAIT_PLAYERS && event.Code == "undo_bet" {
+		lastBet := client.DequeueBet()
+		if lastBet != nil {
+			m.Broadcast <- &netw.Envelope{
+				Client: "client_id",
+				Message: &netw.AddMoney{
+					InternalId: lastBet.InternalId,
+					Amount:     lastBet.Amount,
+					Op:         "undo_bet",
+				},
+				MessageCode: netw.EAddMoney,
+			}
 		}
 	}
 }

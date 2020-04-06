@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
 	"bitbucket.org/digitdreamteam/mirana/core/mdl"
 	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
+	"bitbucket.org/digitdreamteam/mirana/utils/stack"
 )
 
 type BlackjackClient struct {
@@ -16,13 +17,16 @@ type BlackjackClient struct {
 	IsDeal         bool
 	IsRebet        bool
 	SessionBalance float32
+	Bets           *stack.Stack
 }
 
 func NewClient(userId string) *BlackjackClient {
 
 	client := &BlackjackClient{
 		Players: make(map[string]*SPPlayer),
+		Bets:    stack.Init(),
 	}
+
 	base := netw.NewBaseClient(client)
 	client.BaseClient = base
 	client.UserId = userId
@@ -56,6 +60,26 @@ func (c *BlackjackClient) PlaceInsuranceBet(internalId string) bool {
 	return c.placeBet(internalId, 0, true)
 }
 
+func (c *BlackjackClient) queueBet(internalId string, amount float32) {
+	b := mdl.NewBet(amount, internalId)
+	c.Bets.Push(b)
+}
+
+func (c *BlackjackClient) DequeueBet() *mdl.Bet {
+	i := c.Bets.Pop()
+	if i != nil {
+		b := i.(*mdl.Bet)
+		player := c.Players[b.InternalId]
+		player.Amount -= b.Amount
+		if player.Amount <= 0 {
+			delete(c.Players, b.InternalId)
+		}
+		c.AddMoney(-b.Amount)
+		return b
+	}
+	return nil
+}
+
 //TODO: fix .Players to GamePlayers
 func (c *BlackjackClient) placeBet(internalId string, amount float32, isInsurance bool) bool {
 	if greader := api.Manager().CheckAmountGreaderThan(c.UserId, amount); !greader {
@@ -75,6 +99,9 @@ func (c *BlackjackClient) placeBet(internalId string, amount float32, isInsuranc
 	cost := -1 * amount
 	api.Manager().AddAmount(c.UserId, cost)
 	c.SessionBalance += (cost)
+	if !isInsurance {
+		c.queueBet(internalId, amount)
+	}
 	return true
 }
 
