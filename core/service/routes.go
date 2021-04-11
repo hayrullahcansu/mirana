@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/core/service/routes"
+	"github.com/hayrullahcansu/mirana/core/service/routes"
 	"github.com/sirupsen/logrus"
 )
 

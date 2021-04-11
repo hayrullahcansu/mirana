@@ -3,7 +3,7 @@ package api
 import (
 	"sync"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mdl"
+	"github.com/hayrullahcansu/mirana/core/mdl"
 )
 
 type AccountManager struct {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mdl"
-	"bitbucket.org/digitdreamteam/mirana/utils/que"
+	"github.com/hayrullahcansu/mirana/core/mdl"
+	"github.com/hayrullahcansu/mirana/utils/que"
 )
 
 func GetSingleDeckPack() *que.Queue {

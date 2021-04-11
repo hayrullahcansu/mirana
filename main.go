@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"time"
 
-	"bitbucket.org/digitdreamteam/mirana/core/service"
-	"bitbucket.org/digitdreamteam/mirana/cross"
+	"github.com/hayrullahcansu/mirana/core/service"
+	"github.com/hayrullahcansu/mirana/cross"
 	"github.com/shiena/ansicolor"
 	"github.com/sirupsen/logrus"
 )

@@ -3,11 +3,11 @@ package routes
 import (
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/utils"
+	"github.com/hayrullahcansu/mirana/utils"
 
 	"github.com/sirupsen/logrus"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mng/lobby"
+	"github.com/hayrullahcansu/mirana/core/mng/lobby"
 )
 
 //JoinLobbyHandler hnadles login requests and authorize user who is valid

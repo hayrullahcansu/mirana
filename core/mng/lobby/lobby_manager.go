@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
+	"github.com/hayrullahcansu/mirana/core/comm/netw"
 )
 
 type LobbyManager struct {

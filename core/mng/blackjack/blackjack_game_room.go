@@ -10,13 +10,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"bitbucket.org/digitdreamteam/mirana/core/api"
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
-	"bitbucket.org/digitdreamteam/mirana/core/mdl"
-	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
-	"bitbucket.org/digitdreamteam/mirana/core/types/gs"
-	"bitbucket.org/digitdreamteam/mirana/utils"
-	"bitbucket.org/digitdreamteam/mirana/utils/que"
+	"github.com/hayrullahcansu/mirana/core/api"
+	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"github.com/hayrullahcansu/mirana/core/mdl"
+	"github.com/hayrullahcansu/mirana/core/types/gr"
+	"github.com/hayrullahcansu/mirana/core/types/gs"
+	"github.com/hayrullahcansu/mirana/utils"
+	"github.com/hayrullahcansu/mirana/utils/que"
 )
 
 type BlackjackGameRoom struct {

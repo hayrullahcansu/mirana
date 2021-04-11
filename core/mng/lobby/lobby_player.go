@@ -1,7 +1,7 @@
 package lobby
 
 import (
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
+	"github.com/hayrullahcansu/mirana/core/comm/netw"
 )
 
 type NetLobbyClient struct {

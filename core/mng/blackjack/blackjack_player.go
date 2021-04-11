@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"bitbucket.org/digitdreamteam/mirana/core/api"
-	"bitbucket.org/digitdreamteam/mirana/core/comm/netw"
-	"bitbucket.org/digitdreamteam/mirana/core/mdl"
-	"bitbucket.org/digitdreamteam/mirana/core/types/gr"
-	"bitbucket.org/digitdreamteam/mirana/utils/stack"
+	"github.com/hayrullahcansu/mirana/core/api"
+	"github.com/hayrullahcansu/mirana/core/comm/netw"
+	"github.com/hayrullahcansu/mirana/core/mdl"
+	"github.com/hayrullahcansu/mirana/core/types/gr"
+	"github.com/hayrullahcansu/mirana/utils/stack"
 )
 
 type BlackjackClient struct {

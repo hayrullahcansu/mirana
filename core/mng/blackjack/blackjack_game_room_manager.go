@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"bitbucket.org/digitdreamteam/mirana/core/settings"
+	"github.com/hayrullahcansu/mirana/core/settings"
 )
 
 type BlackjackGameRoomManager struct {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mng/blackjack"
-	"bitbucket.org/digitdreamteam/mirana/utils"
+	"github.com/hayrullahcansu/mirana/core/mng/blackjack"
+	"github.com/hayrullahcansu/mirana/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,7 +16,7 @@ func JoinRoomNormalGameHandler(w http.ResponseWriter, r *http.Request) {
 	if userId != "" {
 		fmt.Println("UserId:" + userId)
 		c := blackjack.NewClient(userId)
-		c.ServeWs(w, r)	
+		c.ServeWs(w, r)
 		blackjack.Manager().RequestSingleDeckPlayGame(c)
 	}
 }

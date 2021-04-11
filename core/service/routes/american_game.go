@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"bitbucket.org/digitdreamteam/mirana/core/mng/blackjack"
-	"bitbucket.org/digitdreamteam/mirana/utils"
+	"github.com/hayrullahcansu/mirana/core/mng/blackjack"
+	"github.com/hayrullahcansu/mirana/utils"
 	"github.com/sirupsen/logrus"
 )
 
